@@ -10,7 +10,7 @@ const cameraSettings = {
 
 function Home() {
   return (
-    <div className="w-full h-screen relative bg-[#A4A2C7]">
+    <div className="w-full h-screen relative bg-[#88E1EB]">
       <Canvas camera={cameraSettings as any} shadows>
         <Suspense fallback={null}>
           <MainScene />
