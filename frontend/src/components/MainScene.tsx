@@ -1,4 +1,4 @@
-import { OrbitControls } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import { folder, useControls } from "leva";
 import Lights from "./scene/Lights";
 import { MainTree } from "./models/MainTree";
@@ -6,6 +6,10 @@ import { MainTree } from "./models/MainTree";
 interface MainSceneProps {}
 
 const MainScene = ({}: MainSceneProps) => {
+  const backTreePosition: [number, number, number] = [-2, -2.08, -2.8];
+  const backTreeRotation: [number, number, number] = [0, -0.9, 0];
+  const backTreeScale = 0.12;
+
   const {
     treePositionX,
     treePositionY,
@@ -107,6 +111,26 @@ const MainScene = ({}: MainSceneProps) => {
         rotation={[treeRotationX, treeRotationY, treeRotationZ]}
         scale={treeScale}
       />
+      <MainTree
+        position={backTreePosition}
+        rotation={backTreeRotation}
+        scale={backTreeScale}
+      />
+      <Html
+        position={[
+          backTreePosition[0],
+          backTreePosition[1] + 1.9,
+          backTreePosition[2],
+        ]}
+        transform
+        center
+        distanceFactor={1.8}
+      >
+        <div className="pointer-events-none text-center text-black">
+          <p className="text-3xl font-bold leading-tight">Muinkpark</p>
+          <p className="text-lg font-regular leading-tight">20 meter</p>
+        </div>
+      </Html>
     </>
   );
 };
