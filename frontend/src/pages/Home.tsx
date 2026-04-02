@@ -11,6 +11,10 @@ const cameraSettings = {
 function Home() {
   return (
     <div className="w-full h-screen relative bg-[#88E1EB]">
+      <div className="pointer-events-none absolute inset-x-0 top-[14%] z-10 text-center text-black">
+        <p className="text-3xl font-bold leading-tight">Citadelpark</p>
+        <p className="text-lg font-regular leading-tight">16.85 meter</p>
+      </div>
       <Canvas camera={cameraSettings as any} shadows>
         <Suspense fallback={null}>
           <MainScene />

@@ -73,7 +73,11 @@ const MainScene = ({}: MainSceneProps) => {
 
   return (
     <>
-      <OrbitControls enableZoom={true} enablePan={false} enableRotate={false} />
+      <OrbitControls
+        enableZoom={false}
+        enablePan={false}
+        enableRotate={false}
+      />
       <Lights />
 
       <mesh
