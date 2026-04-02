@@ -14,7 +14,7 @@ const Lights = () => {
 
   return (
     <>
-      <Environment preset="warehouse" background={false} />
+      <Environment preset="apartment" background={false} />
       <directionalLight position={[5, 5, 5]} intensity={0.5} castShadow />
     </>
   );

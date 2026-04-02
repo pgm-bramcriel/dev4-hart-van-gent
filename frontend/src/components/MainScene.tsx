@@ -119,7 +119,7 @@ const MainScene = ({}: MainSceneProps) => {
       <Html
         position={[
           backTreePosition[0],
-          backTreePosition[1] + 1.9,
+          backTreePosition[1] + 1.84,
           backTreePosition[2],
         ]}
         transform
