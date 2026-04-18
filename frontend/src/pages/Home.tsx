@@ -24,7 +24,10 @@ function Home() {
     socket.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        if (payload.type === "heartbeat" || payload.type === "random-test-value") {
+        if (
+          payload.type === "heartbeat" ||
+          payload.type === "random-test-value"
+        ) {
           const nextValue = Number(payload.value);
           if (Number.isFinite(nextValue)) {
             setHeartValue(nextValue);

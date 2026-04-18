@@ -9,8 +9,8 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 
-const SERIAL_PATH = process.env.SERIAL_PORT || "COM3";
-const BAUD = parseInt(process.env.BAUD_RATE || "115200", 10);
+const SERIAL_PATH = process.env.SERIAL_PORT || "COM10";
+const BAUD = parseInt(process.env.BAUD_RATE || "9600", 10);
 
 const port = new SerialPort({ path: SERIAL_PATH, baudRate: BAUD });
 const parser = port.pipe(new ReadlineParser({ delimiter: "\n" }));
@@ -30,6 +30,8 @@ port.on("error", (err) => {
 
 let sessionActive = false;
 const BPM_LINE_REGEX = /^Current BPM:\s*([0-9]+(?:\.[0-9]+)?)$/i;
+const SESSION_START_REGEX = /^---\s*(?:new\s+)?session\s+started\s*---$/i;
+const SESSION_END_REGEX = /^---\s*session\s+ended\s*---$/i;
 
 parser.on("data", (line) => {
   const msg = line.trim();
@@ -37,13 +39,13 @@ parser.on("data", (line) => {
 
   console.log(`Serial Received: ${msg}`);
 
-  if (msg === "--- New session started ---") {
+  if (SESSION_START_REGEX.test(msg)) {
     sessionActive = true;
     sendWsMessage({ type: "heartbeat-session-start", ts: Date.now() });
     return;
   }
 
-  if (msg === "--- Session ended ---") {
+  if (SESSION_END_REGEX.test(msg)) {
     sessionActive = false;
     sendWsMessage({ type: "heartbeat-session-end", ts: Date.now() });
     return;
