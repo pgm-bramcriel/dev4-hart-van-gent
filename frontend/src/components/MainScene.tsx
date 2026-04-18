@@ -2,19 +2,87 @@ import { Html, OrbitControls } from "@react-three/drei";
 import { folder, useControls } from "leva";
 import Lights from "./scene/Lights";
 import { MainTree } from "./models/MainTree";
+import { TreeLarge } from "./models/TreeLarge";
+import { TreeSapling } from "./models/TreeSapling";
 
 type MainSceneProps = {
+  mainLocationName: string;
+  mainLocationHeightLabel: string;
   secondaryLocationName: string;
   secondaryLocationHeightLabel: string;
+  mainLocationHeightCm: number | null;
+  secondaryLocationHeightCm: number | null;
 };
 
+type TreeVariant = "sapling" | "main" | "large";
+
+function getTreeVariant(heightInCm: number | null): TreeVariant {
+  if (heightInCm === null) {
+    return "main";
+  }
+
+  const heightInMeters = heightInCm / 100;
+
+  if (heightInMeters < 3) {
+    return "sapling";
+  }
+
+  if (heightInMeters < 8) {
+    return "main";
+  }
+
+  return "large";
+}
+
+function getTreeComponent(variant: TreeVariant) {
+  if (variant === "sapling") {
+    return TreeSapling;
+  }
+
+  if (variant === "large") {
+    return TreeLarge;
+  }
+
+  return MainTree;
+}
+
+function getTreeScaleMultiplier(variant: TreeVariant) {
+  if (variant === "sapling") {
+    return 2;
+  }
+
+  if (variant === "large") {
+    return 0.65;
+  }
+
+  return 1;
+}
+
+function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
+  const modelHeightByVariant = {
+    sapling: 2,
+    main: 14,
+    large: 20,
+  } as const;
+
+  return modelHeightByVariant[variant] * treeScale + 0.35;
+}
+
 const MainScene = ({
+  mainLocationName,
+  mainLocationHeightLabel,
   secondaryLocationName,
   secondaryLocationHeightLabel,
+  mainLocationHeightCm,
+  secondaryLocationHeightCm,
 }: MainSceneProps) => {
   const backTreePosition: [number, number, number] = [-2, -2.08, -2.8];
   const backTreeRotation: [number, number, number] = [0, -0.9, 0];
   const backTreeScale = 0.12;
+  const mainTreeVariant = getTreeVariant(mainLocationHeightCm);
+  const secondaryTreeVariant = getTreeVariant(secondaryLocationHeightCm);
+  const MainLocationTree = getTreeComponent(mainTreeVariant);
+  const SecondaryLocationTree = getTreeComponent(secondaryTreeVariant);
 
   const {
     treePositionX,
@@ -80,6 +148,20 @@ const MainScene = ({
       hill3ScaleZ: { value: 2.1, min: 0.1, max: 20, step: 0.1 },
     }),
   });
+  const mainTreeScaleMultiplier = getTreeScaleMultiplier(mainTreeVariant);
+  const secondaryTreeScaleMultiplier =
+    getTreeScaleMultiplier(secondaryTreeVariant);
+  const effectiveMainTreeScale = treeScale * mainTreeScaleMultiplier;
+  const effectiveSecondaryTreeScale =
+    backTreeScale * secondaryTreeScaleMultiplier;
+  const mainLabelOffsetY = getLabelOffsetY(
+    mainTreeVariant,
+    effectiveMainTreeScale,
+  );
+  const secondaryLabelOffsetY = getLabelOffsetY(
+    secondaryTreeVariant,
+    effectiveSecondaryTreeScale,
+  );
 
   return (
     <>
@@ -112,20 +194,37 @@ const MainScene = ({
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
 
-      <MainTree
+      <MainLocationTree
         position={[treePositionX, treePositionY, treePositionZ]}
         rotation={[treeRotationX, treeRotationY, treeRotationZ]}
-        scale={treeScale}
+        scale={effectiveMainTreeScale}
       />
-      <MainTree
+      <Html
+        position={[
+          treePositionX,
+          treePositionY + mainLabelOffsetY,
+          treePositionZ,
+        ]}
+        transform
+        center
+        distanceFactor={1.8}
+      >
+        <div className="pointer-events-none text-center text-black">
+          <p className="text-3xl font-bold leading-tight">{mainLocationName}</p>
+          <p className="text-lg font-regular leading-tight">
+            {mainLocationHeightLabel}
+          </p>
+        </div>
+      </Html>
+      <SecondaryLocationTree
         position={backTreePosition}
         rotation={backTreeRotation}
-        scale={backTreeScale}
+        scale={effectiveSecondaryTreeScale}
       />
       <Html
         position={[
           backTreePosition[0],
-          backTreePosition[1] + 1.84,
+          backTreePosition[1] + secondaryLabelOffsetY,
           backTreePosition[2],
         ]}
         transform
@@ -133,8 +232,12 @@ const MainScene = ({
         distanceFactor={1.8}
       >
         <div className="pointer-events-none text-center text-black">
-          <p className="text-3xl font-bold leading-tight">{secondaryLocationName}</p>
-          <p className="text-lg font-regular leading-tight">{secondaryLocationHeightLabel}</p>
+          <p className="text-3xl font-bold leading-tight">
+            {secondaryLocationName}
+          </p>
+          <p className="text-lg font-regular leading-tight">
+            {secondaryLocationHeightLabel}
+          </p>
         </div>
       </Html>
     </>

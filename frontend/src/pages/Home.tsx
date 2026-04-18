@@ -111,23 +111,19 @@ function Home() {
           <span className="text-3xl font-bold leading-none">{heartValue}</span>
         </div>
       </div>
-      <div className="pointer-events-none absolute inset-x-0 top-[16%] z-10 text-center text-black">
-        <p className="text-3xl font-bold leading-tight">
-          {mainLocation?.name ?? "Main location"}
-        </p>
-        <p className="text-lg font-regular leading-tight">
-          {formatHeightInMeters(mainLocation?.height ?? null)}
-        </p>
-      </div>
       <Canvas camera={cameraSettings as any} shadows>
         <Suspense fallback={null}>
           <MainScene
+            mainLocationName={mainLocation?.name ?? "Main location"}
+            mainLocationHeightLabel={formatHeightInMeters(mainLocation?.height ?? null)}
             secondaryLocationName={
               secondaryLocation?.name ?? "Secondary location"
             }
             secondaryLocationHeightLabel={formatHeightInMeters(
               secondaryLocation?.height ?? null,
             )}
+            mainLocationHeightCm={mainLocation?.height ?? null}
+            secondaryLocationHeightCm={secondaryLocation?.height ?? null}
           />
         </Suspense>
       </Canvas>
