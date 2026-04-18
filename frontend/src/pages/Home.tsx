@@ -10,8 +10,41 @@ const cameraSettings = {
   position: [0, 0, 5],
 };
 
+type LocationRow = {
+  id: number;
+  name: string;
+  height: number | null;
+};
+
+function formatHeightInMeters(heightInCm: number | null) {
+  if (heightInCm === null) {
+    return "- meter";
+  }
+
+  const meters = heightInCm / 100;
+  const compactValue = Number(meters.toFixed(2)).toString();
+  return `${compactValue} meter`;
+}
+
 function Home() {
   const [heartValue, setHeartValue] = useState(0);
+  const [locations, setLocations] = useState<LocationRow[]>([]);
+  const configuredMainLocationName = (
+    import.meta.env.VITE_MAIN_LOCATION ??
+    import.meta.env.MAIN_LOCATION ??
+    ""
+  )
+    .trim()
+    .toLowerCase();
+  const mainLocation =
+    locations.find(
+      (location) =>
+        location.name.trim().toLowerCase() === configuredMainLocationName,
+    ) ??
+    locations[0] ??
+    null;
+  const secondaryLocation =
+    locations.find((location) => location.id !== mainLocation?.id) ?? null;
 
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3002";
@@ -53,7 +86,10 @@ function Home() {
 
   useEffect(() => {
     async function getLocations() {
-      const { data, error } = await supabase.from("locations").select("name, height");
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name, height")
+        .order("id", { ascending: true });
 
       if (error) {
         console.error("Error fetching locations:", error);
@@ -61,6 +97,7 @@ function Home() {
       }
 
       console.log("Locations:", data);
+      setLocations(data ?? []);
     }
 
     getLocations();
@@ -75,12 +112,23 @@ function Home() {
         </div>
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-[16%] z-10 text-center text-black">
-        <p className="text-3xl font-bold leading-tight">Citadelpark</p>
-        <p className="text-lg font-regular leading-tight">16.85 meter</p>
+        <p className="text-3xl font-bold leading-tight">
+          {mainLocation?.name ?? "Main location"}
+        </p>
+        <p className="text-lg font-regular leading-tight">
+          {formatHeightInMeters(mainLocation?.height ?? null)}
+        </p>
       </div>
       <Canvas camera={cameraSettings as any} shadows>
         <Suspense fallback={null}>
-          <MainScene />
+          <MainScene
+            secondaryLocationName={
+              secondaryLocation?.name ?? "Secondary location"
+            }
+            secondaryLocationHeightLabel={formatHeightInMeters(
+              secondaryLocation?.height ?? null,
+            )}
+          />
         </Suspense>
       </Canvas>
     </div>

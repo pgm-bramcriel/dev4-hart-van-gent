@@ -3,9 +3,15 @@ import { folder, useControls } from "leva";
 import Lights from "./scene/Lights";
 import { MainTree } from "./models/MainTree";
 
-interface MainSceneProps {}
+type MainSceneProps = {
+  secondaryLocationName: string;
+  secondaryLocationHeightLabel: string;
+};
 
-const MainScene = ({}: MainSceneProps) => {
+const MainScene = ({
+  secondaryLocationName,
+  secondaryLocationHeightLabel,
+}: MainSceneProps) => {
   const backTreePosition: [number, number, number] = [-2, -2.08, -2.8];
   const backTreeRotation: [number, number, number] = [0, -0.9, 0];
   const backTreeScale = 0.12;
@@ -127,8 +133,8 @@ const MainScene = ({}: MainSceneProps) => {
         distanceFactor={1.8}
       >
         <div className="pointer-events-none text-center text-black">
-          <p className="text-3xl font-bold leading-tight">Muinkpark</p>
-          <p className="text-lg font-regular leading-tight">20 meter</p>
+          <p className="text-3xl font-bold leading-tight">{secondaryLocationName}</p>
+          <p className="text-lg font-regular leading-tight">{secondaryLocationHeightLabel}</p>
         </div>
       </Html>
     </>
