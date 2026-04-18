@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import MainScene from "@/components/MainScene";
 import heartIcon from "@/assets/heart_icon.svg";
+import { supabase } from "@/utils/supabase";
 
 const cameraSettings = {
   fov: 45,
@@ -45,6 +46,21 @@ function Home() {
     return () => {
       socket.close();
     };
+  }, []);
+
+  useEffect(() => {
+    async function getLocations() {
+      const { data, error } = await supabase.from("locations").select("name, height");
+
+      if (error) {
+        console.error("Error fetching locations:", error);
+        return;
+      }
+
+      console.log("Locations:", data);
+    }
+
+    getLocations();
   }, []);
 
   return (
