@@ -1,8 +1,6 @@
-import { useEffect, useRef } from "react";
 import { Html, OrbitControls } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
-import { folder, useControls } from "leva";
 import Lights from "./scene/Lights";
+import { useGrowAnimation } from "./scene/GrowAnimation";
 import { MainTree } from "./models/MainTree";
 import { TreeLarge } from "./models/TreeLarge";
 import { TreeSapling } from "./models/TreeSapling";
@@ -17,9 +15,18 @@ type MainSceneProps = {
 };
 
 type TreeVariant = "sapling" | "main" | "large";
-const CM_TO_CAMERA_ZOOM_OUT = 0.003;
-const MAX_CAMERA_ZOOM_OUT = 1.4;
-const CAMERA_Z_LERP = 0.12;
+const MAIN_TREE_POSITION: [number, number, number] = [0, -1.4, 0];
+const MAIN_TREE_ROTATION: [number, number, number] = [0, -0.8, 0];
+const MAIN_TREE_BASE_SCALE = 0.18;
+const SECONDARY_TREE_POSITION: [number, number, number] = [-2, -2.08, -2.8];
+const SECONDARY_TREE_ROTATION: [number, number, number] = [0, -0.9, 0];
+const SECONDARY_TREE_BASE_SCALE = 0.12;
+const HILL_1_POSITION: [number, number, number] = [3.3, -3.0, -1.4];
+const HILL_1_SCALE: [number, number, number] = [5.6, 1.8, 2.2];
+const HILL_2_POSITION: [number, number, number] = [0, -3.3, 0.4];
+const HILL_2_SCALE: [number, number, number] = [4.2, 2.1, 2.4];
+const HILL_3_POSITION: [number, number, number] = [-3.8, -3.1, -0.8];
+const HILL_3_SCALE: [number, number, number] = [4.8, 1.7, 2.1];
 
 function getTreeVariant(heightInCm: number | null): TreeVariant {
   if (heightInCm === null) {
@@ -66,20 +73,11 @@ function getTreeScaleMultiplier(variant: TreeVariant) {
 function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
   const modelHeightByVariant = {
     sapling: 2,
-    main: 14,
+    main: 13,
     large: 20,
   } as const;
 
   return modelHeightByVariant[variant] * treeScale + 0.35;
-}
-
-function getCameraZoomOutForGrowth(
-  currentHeightCm: number | null,
-  baselineHeightCm: number | null,
-) {
-  if (currentHeightCm === null || baselineHeightCm === null) return 0;
-  const growthCm = Math.max(0, currentHeightCm - baselineHeightCm);
-  return Math.min(growthCm * CM_TO_CAMERA_ZOOM_OUT, MAX_CAMERA_ZOOM_OUT);
 }
 
 const MainScene = ({
@@ -90,119 +88,22 @@ const MainScene = ({
   mainLocationHeightCm,
   secondaryLocationHeightCm,
 }: MainSceneProps) => {
-  const { camera } = useThree();
-  const baselineMainHeightCmRef = useRef<number | null>(null);
-  const baseCameraZRef = useRef<number | null>(null);
-  const backTreePosition: [number, number, number] = [-2, -2.08, -2.8];
-  const backTreeRotation: [number, number, number] = [0, -0.9, 0];
-  const backTreeScale = 0.12;
   const mainTreeVariant = getTreeVariant(mainLocationHeightCm);
   const secondaryTreeVariant = getTreeVariant(secondaryLocationHeightCm);
   const MainLocationTree = getTreeComponent(mainTreeVariant);
   const SecondaryLocationTree = getTreeComponent(secondaryTreeVariant);
-
-  const {
-    treePositionX,
-    treePositionY,
-    treePositionZ,
-    treeRotationX,
-    treeRotationY,
-    treeRotationZ,
-    treeScale,
-    hill1PositionX,
-    hill1PositionY,
-    hill1PositionZ,
-    hill1ScaleX,
-    hill1ScaleY,
-    hill1ScaleZ,
-    hill2PositionX,
-    hill2PositionY,
-    hill2PositionZ,
-    hill2ScaleX,
-    hill2ScaleY,
-    hill2ScaleZ,
-    hill3PositionX,
-    hill3PositionY,
-    hill3PositionZ,
-    hill3ScaleX,
-    hill3ScaleY,
-    hill3ScaleZ,
-  } = useControls("Scene", {
-    Tree: folder(
-      {
-        treePositionX: { value: 0, min: -20, max: 20, step: 0.1 },
-        treePositionY: { value: -1.4, min: -20, max: 20, step: 0.1 },
-        treePositionZ: { value: 0, min: -20, max: 20, step: 0.1 },
-        treeRotationX: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-        treeRotationY: { value: -0.8, min: -Math.PI, max: Math.PI, step: 0.01 },
-        treeRotationZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
-        treeScale: { value: 0.18, min: 0.1, max: 5, step: 0.01 },
-      },
-      { collapsed: false },
-    ),
-    "Hill 1": folder({
-      hill1PositionX: { value: 3.3, min: -20, max: 20, step: 0.1 },
-      hill1PositionY: { value: -3.0, min: -20, max: 20, step: 0.1 },
-      hill1PositionZ: { value: -1.4, min: -20, max: 20, step: 0.1 },
-      hill1ScaleX: { value: 5.6, min: 0.1, max: 20, step: 0.1 },
-      hill1ScaleY: { value: 1.8, min: 0.1, max: 20, step: 0.1 },
-      hill1ScaleZ: { value: 2.2, min: 0.1, max: 20, step: 0.1 },
-    }),
-    "Hill 2": folder({
-      hill2PositionX: { value: 0, min: -20, max: 20, step: 0.1 },
-      hill2PositionY: { value: -3.3, min: -20, max: 20, step: 0.1 },
-      hill2PositionZ: { value: 0.4, min: -20, max: 20, step: 0.1 },
-      hill2ScaleX: { value: 4.2, min: 0.1, max: 20, step: 0.1 },
-      hill2ScaleY: { value: 2.1, min: 0.1, max: 20, step: 0.1 },
-      hill2ScaleZ: { value: 2.4, min: 0.1, max: 20, step: 0.1 },
-    }),
-    "Hill 3": folder({
-      hill3PositionX: { value: -3.8, min: -20, max: 20, step: 0.1 },
-      hill3PositionY: { value: -3.1, min: -20, max: 20, step: 0.1 },
-      hill3PositionZ: { value: -0.8, min: -20, max: 20, step: 0.1 },
-      hill3ScaleX: { value: 4.8, min: 0.1, max: 20, step: 0.1 },
-      hill3ScaleY: { value: 1.7, min: 0.1, max: 20, step: 0.1 },
-      hill3ScaleZ: { value: 2.1, min: 0.1, max: 20, step: 0.1 },
-    }),
-  });
-
-  useEffect(() => {
-    if (baseCameraZRef.current === null) {
-      baseCameraZRef.current = camera.position.z;
-    }
-  }, [camera]);
-
-  useEffect(() => {
-    if (baselineMainHeightCmRef.current === null && mainLocationHeightCm !== null) {
-      baselineMainHeightCmRef.current = mainLocationHeightCm;
-    }
-  }, [mainLocationHeightCm]);
-
-  const baseCameraZ = baseCameraZRef.current ?? camera.position.z;
-  const cameraZoomOut = getCameraZoomOutForGrowth(
+  const { cameraCompensationScale } = useGrowAnimation({
     mainLocationHeightCm,
-    baselineMainHeightCmRef.current,
-  );
-  const targetCameraZ = baseCameraZ + cameraZoomOut;
-  const baseCameraDistanceToMainTree = baseCameraZ - treePositionZ;
-  const targetCameraDistanceToMainTree = targetCameraZ - treePositionZ;
-  const cameraCompensationScale =
-    baseCameraDistanceToMainTree > 0 && targetCameraDistanceToMainTree > 0
-      ? targetCameraDistanceToMainTree / baseCameraDistanceToMainTree
-      : 1;
-
-  useFrame(() => {
-    camera.position.z += (targetCameraZ - camera.position.z) * CAMERA_Z_LERP;
-    camera.updateProjectionMatrix();
+    mainTreePositionZ: MAIN_TREE_POSITION[2],
   });
 
   const mainTreeScaleMultiplier = getTreeScaleMultiplier(mainTreeVariant);
   const secondaryTreeScaleMultiplier =
     getTreeScaleMultiplier(secondaryTreeVariant);
   const effectiveMainTreeScale =
-    treeScale * mainTreeScaleMultiplier * cameraCompensationScale;
+    MAIN_TREE_BASE_SCALE * mainTreeScaleMultiplier * cameraCompensationScale;
   const effectiveSecondaryTreeScale =
-    backTreeScale * secondaryTreeScaleMultiplier;
+    SECONDARY_TREE_BASE_SCALE * secondaryTreeScaleMultiplier;
   const mainLabelOffsetY = getLabelOffsetY(
     mainTreeVariant,
     effectiveMainTreeScale,
@@ -221,38 +122,29 @@ const MainScene = ({
       />
       <Lights />
 
-      <mesh
-        position={[hill1PositionX, hill1PositionY, hill1PositionZ]}
-        scale={[hill1ScaleX, hill1ScaleY, hill1ScaleZ]}
-      >
+      <mesh position={HILL_1_POSITION} scale={HILL_1_SCALE}>
         <sphereGeometry args={[1, 48, 48]} />
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
-      <mesh
-        position={[hill2PositionX, hill2PositionY, hill2PositionZ]}
-        scale={[hill2ScaleX, hill2ScaleY, hill2ScaleZ]}
-      >
+      <mesh position={HILL_2_POSITION} scale={HILL_2_SCALE}>
         <sphereGeometry args={[1, 48, 48]} />
         <meshBasicMaterial color="#55B959" />
       </mesh>
-      <mesh
-        position={[hill3PositionX, hill3PositionY, hill3PositionZ]}
-        scale={[hill3ScaleX, hill3ScaleY, hill3ScaleZ]}
-      >
+      <mesh position={HILL_3_POSITION} scale={HILL_3_SCALE}>
         <sphereGeometry args={[1, 48, 48]} />
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
 
       <MainLocationTree
-        position={[treePositionX, treePositionY, treePositionZ]}
-        rotation={[treeRotationX, treeRotationY, treeRotationZ]}
+        position={MAIN_TREE_POSITION}
+        rotation={MAIN_TREE_ROTATION}
         scale={effectiveMainTreeScale}
       />
       <Html
         position={[
-          treePositionX,
-          treePositionY + mainLabelOffsetY,
-          treePositionZ,
+          MAIN_TREE_POSITION[0],
+          MAIN_TREE_POSITION[1] + mainLabelOffsetY,
+          MAIN_TREE_POSITION[2],
         ]}
         transform
         center
@@ -266,15 +158,15 @@ const MainScene = ({
         </div>
       </Html>
       <SecondaryLocationTree
-        position={backTreePosition}
-        rotation={backTreeRotation}
+        position={SECONDARY_TREE_POSITION}
+        rotation={SECONDARY_TREE_ROTATION}
         scale={effectiveSecondaryTreeScale}
       />
       <Html
         position={[
-          backTreePosition[0],
-          backTreePosition[1] + secondaryLabelOffsetY,
-          backTreePosition[2],
+          SECONDARY_TREE_POSITION[0],
+          SECONDARY_TREE_POSITION[1] + secondaryLabelOffsetY,
+          SECONDARY_TREE_POSITION[2],
         ]}
         transform
         center
