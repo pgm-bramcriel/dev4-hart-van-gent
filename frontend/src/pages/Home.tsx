@@ -17,6 +17,67 @@ const cameraSettings = {
   position: [0, 0, 5],
 };
 
+const HEART_COUNTDOWN_INTERVAL_MS = 30;
+const TREE_GROWTH_DURATION_MS = 1200;
+
+function startHeartbeatCountdown(
+  startValue: number,
+  onTick: (value: number) => void,
+  onComplete: () => void,
+) {
+  let currentValue = Math.max(0, Math.round(startValue));
+  onTick(currentValue);
+
+  if (currentValue <= 0) {
+    onComplete();
+    return () => {};
+  }
+
+  const intervalId = window.setInterval(() => {
+    currentValue -= 3;
+    if (currentValue <= 0) {
+      onTick(0);
+      window.clearInterval(intervalId);
+      onComplete();
+      return;
+    }
+    onTick(currentValue);
+  }, HEART_COUNTDOWN_INTERVAL_MS);
+
+  return () => {
+    window.clearInterval(intervalId);
+  };
+}
+
+function startHeightGrowthAnimation(
+  fromCm: number,
+  toCm: number,
+  onUpdate: (value: number) => void,
+  onComplete: () => void,
+) {
+  const startedAt = performance.now();
+  let frameId = 0;
+
+  const animateFrame = (now: number) => {
+    const progress = Math.min((now - startedAt) / TREE_GROWTH_DURATION_MS, 1);
+    const nextValue = fromCm + (toCm - fromCm) * progress;
+    onUpdate(nextValue);
+
+    if (progress >= 1) {
+      onComplete();
+      return;
+    }
+
+    frameId = window.requestAnimationFrame(animateFrame);
+  };
+
+  frameId = window.requestAnimationFrame(animateFrame);
+
+  return () => {
+    window.cancelAnimationFrame(frameId);
+  };
+}
+
 function formatHeightInMeters(heightInCm: number | null) {
   if (heightInCm === null) {
     return "- meter";
@@ -32,6 +93,9 @@ function Home() {
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const pendingSessionAverageRef = useRef<number | null>(null);
   const mainLocationRef = useRef<LocationRow | null>(null);
+  const heartValueRef = useRef(0);
+  const cancelHeartCountdownRef = useRef<(() => void) | null>(null);
+  const cancelTreeGrowthRef = useRef<(() => void) | null>(null);
   const configuredMainLocationName = (
     import.meta.env.VITE_MAIN_LOCATION ??
     import.meta.env.MAIN_LOCATION ??
@@ -54,8 +118,24 @@ function Home() {
   }, [mainLocation]);
 
   useEffect(() => {
+    heartValueRef.current = heartValue;
+  }, [heartValue]);
+
+  useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3002";
     const socket = new WebSocket(wsUrl);
+
+    function setHeartValueLive(value: number) {
+      heartValueRef.current = value;
+      setHeartValue(value);
+    }
+
+    function stopRunningAnimations() {
+      cancelHeartCountdownRef.current?.();
+      cancelHeartCountdownRef.current = null;
+      cancelTreeGrowthRef.current?.();
+      cancelTreeGrowthRef.current = null;
+    }
 
     async function handleSessionEnd() {
       const averageBpm = pendingSessionAverageRef.current;
@@ -64,17 +144,46 @@ function Home() {
         return;
       }
 
+      stopRunningAnimations();
+
+      cancelHeartCountdownRef.current = startHeartbeatCountdown(
+        heartValueRef.current,
+        (nextHeartValue) => {
+          setHeartValueLive(nextHeartValue);
+        },
+        () => {
+          cancelHeartCountdownRef.current = null;
+        },
+      );
+
+      const startHeightCm = currentMainLocation.height ?? 0;
       const nextHeightCm = getNextHeightAfterSession(
         currentMainLocation.height,
         averageBpm,
       );
 
-      setLocations((previousLocations) =>
-        applyHeightLocally(
-          previousLocations,
-          currentMainLocation.id,
-          nextHeightCm,
-        ),
+      cancelTreeGrowthRef.current = startHeightGrowthAnimation(
+        startHeightCm,
+        nextHeightCm,
+        (animatedHeightCm) => {
+          setLocations((previousLocations) =>
+            applyHeightLocally(
+              previousLocations,
+              currentMainLocation.id,
+              animatedHeightCm,
+            ),
+          );
+        },
+        () => {
+          cancelTreeGrowthRef.current = null;
+          setLocations((previousLocations) =>
+            applyHeightLocally(
+              previousLocations,
+              currentMainLocation.id,
+              nextHeightCm,
+            ),
+          );
+        },
       );
 
       const { error } = await persistLocationHeight(
@@ -99,11 +208,12 @@ function Home() {
       }
 
       if (message.type === "heartbeat") {
-        setHeartValue(message.value);
+        setHeartValueLive(message.value);
         return;
       }
 
       if (message.type === "heartbeat-session-start") {
+        stopRunningAnimations();
         pendingSessionAverageRef.current = null;
         return;
       }
@@ -128,6 +238,7 @@ function Home() {
     };
 
     return () => {
+      stopRunningAnimations();
       socket.close();
     };
   }, []);

@@ -41,7 +41,7 @@ parser.on("data", (line) => {
 
 const PORT = process.env.PORT || 3001;
 
-let test = false;
+let test = true;
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
