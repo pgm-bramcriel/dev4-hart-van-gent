@@ -1,19 +1,20 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import MainScene from "@/components/MainScene";
 import heartIcon from "@/assets/heart_icon.svg";
 import { supabase } from "@/utils/supabase";
+import { parseHeartbeatWsMessage } from "@/utils/heartbeatMessages";
+import {
+  applyHeightLocally,
+  getNextHeightAfterSession,
+  persistLocationHeight,
+  type LocationRow,
+} from "@/utils/locationGrowth";
 
 const cameraSettings = {
   fov: 45,
   far: 400,
   position: [0, 0, 5],
-};
-
-type LocationRow = {
-  id: number;
-  name: string;
-  height: number | null;
 };
 
 function formatHeightInMeters(heightInCm: number | null) {
@@ -29,6 +30,8 @@ function formatHeightInMeters(heightInCm: number | null) {
 function Home() {
   const [heartValue, setHeartValue] = useState(0);
   const [locations, setLocations] = useState<LocationRow[]>([]);
+  const pendingSessionAverageRef = useRef<number | null>(null);
+  const mainLocationRef = useRef<LocationRow | null>(null);
   const configuredMainLocationName = (
     import.meta.env.VITE_MAIN_LOCATION ??
     import.meta.env.MAIN_LOCATION ??
@@ -47,27 +50,72 @@ function Home() {
     locations.find((location) => location.id !== mainLocation?.id) ?? null;
 
   useEffect(() => {
+    mainLocationRef.current = mainLocation;
+  }, [mainLocation]);
+
+  useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3002";
     const socket = new WebSocket(wsUrl);
+
+    async function handleSessionEnd() {
+      const averageBpm = pendingSessionAverageRef.current;
+      const currentMainLocation = mainLocationRef.current;
+      if (averageBpm === null || !currentMainLocation) {
+        return;
+      }
+
+      const nextHeightCm = getNextHeightAfterSession(
+        currentMainLocation.height,
+        averageBpm,
+      );
+
+      setLocations((previousLocations) =>
+        applyHeightLocally(
+          previousLocations,
+          currentMainLocation.id,
+          nextHeightCm,
+        ),
+      );
+
+      const { error } = await persistLocationHeight(
+        supabase,
+        currentMainLocation.id,
+        nextHeightCm,
+      );
+      if (error) {
+        console.error("Error saving grown tree height:", error);
+      }
+    }
 
     socket.onopen = () => {
       console.log(`Connected to WS server: ${wsUrl}`);
     };
 
-    socket.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (
-          payload.type === "heartbeat" ||
-          payload.type === "random-test-value"
-        ) {
-          const nextValue = Number(payload.value);
-          if (Number.isFinite(nextValue)) {
-            setHeartValue(nextValue);
-          }
-        }
-      } catch {
-        console.warn("Received non-JSON WS message:", event.data);
+    socket.onmessage = async (event) => {
+      const message = parseHeartbeatWsMessage(event.data);
+      if (!message) {
+        console.warn("Received invalid WS message:", event.data);
+        return;
+      }
+
+      if (message.type === "heartbeat") {
+        setHeartValue(message.value);
+        return;
+      }
+
+      if (message.type === "heartbeat-session-start") {
+        pendingSessionAverageRef.current = null;
+        return;
+      }
+
+      if (message.type === "heartbeat-session-average") {
+        pendingSessionAverageRef.current = message.value;
+        return;
+      }
+
+      if (message.type === "heartbeat-session-end") {
+        await handleSessionEnd();
+        pendingSessionAverageRef.current = null;
       }
     };
 
@@ -96,7 +144,6 @@ function Home() {
         return;
       }
 
-      console.log("Locations:", data);
       setLocations(data ?? []);
     }
 
@@ -115,7 +162,9 @@ function Home() {
         <Suspense fallback={null}>
           <MainScene
             mainLocationName={mainLocation?.name ?? "Main location"}
-            mainLocationHeightLabel={formatHeightInMeters(mainLocation?.height ?? null)}
+            mainLocationHeightLabel={formatHeightInMeters(
+              mainLocation?.height ?? null,
+            )}
             secondaryLocationName={
               secondaryLocation?.name ?? "Secondary location"
             }

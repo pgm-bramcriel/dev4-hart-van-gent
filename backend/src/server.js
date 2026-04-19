@@ -29,52 +29,133 @@ port.on("error", (err) => {
 });
 
 let sessionActive = false;
+let currentSessionBpmValues = [];
 const BPM_LINE_REGEX = /^Current BPM:\s*([0-9]+(?:\.[0-9]+)?)$/i;
+const AVERAGE_BPM_LINE_REGEX = /^Average BPM:\s*([0-9]+(?:\.[0-9]+)?)$/i;
 const SESSION_START_REGEX = /^---\s*(?:new\s+)?session\s+started\s*---$/i;
 const SESSION_END_REGEX = /^---\s*session\s+ended\s*---$/i;
 
 parser.on("data", (line) => {
+  handleIncomingPulseLine(line);
+});
+
+const PORT = process.env.PORT || 3001;
+
+let test = false;
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+
+  if (test) {
+    runMockHeartbeatSessionOnce();
+  }
+});
+
+function handleIncomingPulseLine(line) {
   const msg = line.trim();
   if (!msg) return;
 
   console.log(`Serial Received: ${msg}`);
 
   if (SESSION_START_REGEX.test(msg)) {
-    sessionActive = true;
-    sendWsMessage({ type: "heartbeat-session-start", ts: Date.now() });
+    startSession();
     return;
   }
 
   if (SESSION_END_REGEX.test(msg)) {
-    sessionActive = false;
-    sendWsMessage({ type: "heartbeat-session-end", ts: Date.now() });
+    endSession();
+    return;
+  }
+
+  const averageBpm = parseBpmValue(msg, AVERAGE_BPM_LINE_REGEX);
+  if (averageBpm !== null) {
+    sendSessionAverage(averageBpm);
     return;
   }
 
   if (!sessionActive) return;
 
-  const bpmMatch = msg.match(BPM_LINE_REGEX);
-  if (!bpmMatch) return;
+  const bpm = parseBpmValue(msg, BPM_LINE_REGEX);
+  if (bpm === null) return;
 
-  const bpm = Math.round(Number.parseFloat(bpmMatch[1]));
-  if (!Number.isFinite(bpm)) return;
+  currentSessionBpmValues.push(bpm);
 
   sendWsMessage({
     type: "heartbeat",
     value: bpm,
     ts: Date.now(),
   });
-});
-
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+}
 
 function sendWsMessage(payload) {
   const data = JSON.stringify(payload);
   wss.clients.forEach((client) => {
     if (client.readyState === client.OPEN) client.send(data);
   });
+}
+
+function startSession() {
+  sessionActive = true;
+  currentSessionBpmValues = [];
+  sendWsMessage({ type: "heartbeat-session-start", ts: Date.now() });
+}
+
+function endSession() {
+  const averageBpm = calculateAverageBpm(currentSessionBpmValues);
+  if (averageBpm !== null) {
+    sendSessionAverage(averageBpm);
+  }
+
+  sessionActive = false;
+  currentSessionBpmValues = [];
+  sendWsMessage({ type: "heartbeat-session-end", ts: Date.now() });
+}
+
+function sendSessionAverage(averageBpm) {
+  const roundedAverageBpm = Math.round(averageBpm);
+  sendWsMessage({
+    type: "heartbeat-session-average",
+    value: roundedAverageBpm,
+    message: `Average BPM: ${roundedAverageBpm}`,
+    ts: Date.now(),
+  });
+}
+
+function calculateAverageBpm(values) {
+  if (!values.length) return null;
+  const sum = values.reduce((accumulator, value) => accumulator + value, 0);
+  const average = sum / values.length;
+  if (!Number.isFinite(average)) return null;
+  return average;
+}
+
+function parseBpmValue(message, regex) {
+  const match = message.match(regex);
+  if (!match) return null;
+
+  const value = Math.round(Number.parseFloat(match[1]));
+  if (!Number.isFinite(value)) return null;
+  return value;
+}
+
+function runMockHeartbeatSessionOnce() {
+  const mockBpmValues = [68, 71, 73, 75, 74, 72, 70, 69, 71, 73];
+
+  handleIncomingPulseLine("--- Session Started ---");
+
+  mockBpmValues.forEach((bpm, index) => {
+    setTimeout(
+      () => {
+        handleIncomingPulseLine(`Current BPM: ${bpm}`);
+      },
+      (index + 1) * 1000,
+    );
+  });
+
+  setTimeout(
+    () => {
+      handleIncomingPulseLine("--- Session Ended ---");
+    },
+    (mockBpmValues.length + 1) * 1000,
+  );
 }
