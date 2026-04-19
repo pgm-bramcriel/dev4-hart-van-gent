@@ -91,6 +91,7 @@ function formatHeightInMeters(heightInCm: number | null) {
 function Home() {
   const [heartValue, setHeartValue] = useState(0);
   const [locations, setLocations] = useState<LocationRow[]>([]);
+  const leafRustleIntensity = 0.2;
   const pendingSessionAverageRef = useRef<number | null>(null);
   const mainLocationRef = useRef<LocationRow | null>(null);
   const heartValueRef = useRef(0);
@@ -284,6 +285,7 @@ function Home() {
             )}
             mainLocationHeightCm={mainLocation?.height ?? null}
             secondaryLocationHeightCm={secondaryLocation?.height ?? null}
+            leafRustleIntensity={leafRustleIntensity}
           />
         </Suspense>
       </Canvas>

@@ -2,6 +2,7 @@ import type { ThreeElements } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import type { Mesh, MeshStandardMaterial } from "three";
+import { useLeafRustleAnimation } from "@/components/scene/useLeafRustleAnimation";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -23,10 +24,19 @@ type GLTFResult = GLTF & {
   };
 };
 
-export function MainTree(props: ThreeElements["group"]) {
+type TreeProps = ThreeElements["group"] & {
+  rustleIntensity?: number;
+};
+
+export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
   const { nodes, materials } = useGLTF(
     "/models/tree_main.glb",
   ) as unknown as GLTFResult;
+  const leavesGroupRef = useLeafRustleAnimation({
+    intensity: rustleIntensity,
+    phaseOffset: 0.25,
+  });
+
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -36,94 +46,96 @@ export function MainTree(props: ThreeElements["group"]) {
         material={materials.Trunk}
         position={[0, 1.029, 0]}
       />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere.geometry}
-        material={materials.Leaves}
-        position={[0, 11.121, 0]}
-        scale={1.17}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere001.geometry}
-        material={materials.Leaves}
-        position={[3.872, 9.129, 1.333]}
-        rotation={[2.131, -1.297, -Math.PI]}
-        scale={[0.844, 0.828, 0.625]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere002.geometry}
-        material={materials.Leaves}
-        position={[5.849, 9.797, -0.444]}
-        scale={[0.647, 0.647, 0.4]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere003.geometry}
-        material={materials.Leaves}
-        position={[4.317, 9.663, -2.86]}
-        rotation={[0, -1.002, 0]}
-        scale={[0.748, 1.017, 0.748]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere004.geometry}
-        material={materials.Leaves}
-        position={[1.487, 9.129, 5.187]}
-        rotation={[-2.657, -1.297, -Math.PI]}
-        scale={[1.088, 1.067, 0.805]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere005.geometry}
-        material={materials.Leaves}
-        position={[-3.435, 9.699, -1.431]}
-        rotation={[Math.PI, -1.415, Math.PI]}
-        scale={[0.471, 0.471, 0.291]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere006.geometry}
-        material={materials.Leaves}
-        position={[-1.778, 9.766, -3.612]}
-        rotation={[-0.361, -0.549, 0.671]}
-        scale={[0.613, 0.602, 0.454]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere007.geometry}
-        material={materials.Leaves}
-        position={[-4.382, 9.519, 1.639]}
-        rotation={[1.969, -1.188, 1.452]}
-        scale={[0.95, 0.932, 0.703]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere008.geometry}
-        material={materials.Leaves}
-        position={[-1.786, 9.272, 3.872]}
-        rotation={[1.046, -0.507, 1.265]}
-        scale={[0.586, 0.586, 0.362]}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Icosphere009.geometry}
-        material={materials.Leaves}
-        position={[0.795, 7.495, -3.773]}
-        rotation={[2.874, -1.419, -2.478]}
-        scale={[0.817, 0.802, 0.605]}
-      />
+      <group ref={leavesGroupRef}>
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere.geometry}
+          material={materials.Leaves}
+          position={[0, 11.121, 0]}
+          scale={1.17}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere001.geometry}
+          material={materials.Leaves}
+          position={[3.872, 9.129, 1.333]}
+          rotation={[2.131, -1.297, -Math.PI]}
+          scale={[0.844, 0.828, 0.625]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere002.geometry}
+          material={materials.Leaves}
+          position={[5.849, 9.797, -0.444]}
+          scale={[0.647, 0.647, 0.4]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere003.geometry}
+          material={materials.Leaves}
+          position={[4.317, 9.663, -2.86]}
+          rotation={[0, -1.002, 0]}
+          scale={[0.748, 1.017, 0.748]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere004.geometry}
+          material={materials.Leaves}
+          position={[1.487, 9.129, 5.187]}
+          rotation={[-2.657, -1.297, -Math.PI]}
+          scale={[1.088, 1.067, 0.805]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere005.geometry}
+          material={materials.Leaves}
+          position={[-3.435, 9.699, -1.431]}
+          rotation={[Math.PI, -1.415, Math.PI]}
+          scale={[0.471, 0.471, 0.291]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere006.geometry}
+          material={materials.Leaves}
+          position={[-1.778, 9.766, -3.612]}
+          rotation={[-0.361, -0.549, 0.671]}
+          scale={[0.613, 0.602, 0.454]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere007.geometry}
+          material={materials.Leaves}
+          position={[-4.382, 9.519, 1.639]}
+          rotation={[1.969, -1.188, 1.452]}
+          scale={[0.95, 0.932, 0.703]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere008.geometry}
+          material={materials.Leaves}
+          position={[-1.786, 9.272, 3.872]}
+          rotation={[1.046, -0.507, 1.265]}
+          scale={[0.586, 0.586, 0.362]}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Icosphere009.geometry}
+          material={materials.Leaves}
+          position={[0.795, 7.495, -3.773]}
+          rotation={[2.874, -1.419, -2.478]}
+          scale={[0.817, 0.802, 0.605]}
+        />
+      </group>
     </group>
   );
 }

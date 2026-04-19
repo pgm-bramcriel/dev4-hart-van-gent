@@ -12,6 +12,7 @@ type MainSceneProps = {
   secondaryLocationHeightLabel: string;
   mainLocationHeightCm: number | null;
   secondaryLocationHeightCm: number | null;
+  leafRustleIntensity: number;
 };
 
 type TreeVariant = "sapling" | "main" | "large";
@@ -87,6 +88,7 @@ const MainScene = ({
   secondaryLocationHeightLabel,
   mainLocationHeightCm,
   secondaryLocationHeightCm,
+  leafRustleIntensity,
 }: MainSceneProps) => {
   const mainTreeVariant = getTreeVariant(mainLocationHeightCm);
   const secondaryTreeVariant = getTreeVariant(secondaryLocationHeightCm);
@@ -139,6 +141,7 @@ const MainScene = ({
         position={MAIN_TREE_POSITION}
         rotation={MAIN_TREE_ROTATION}
         scale={effectiveMainTreeScale}
+        rustleIntensity={leafRustleIntensity}
       />
       <Html
         position={[
@@ -161,6 +164,7 @@ const MainScene = ({
         position={SECONDARY_TREE_POSITION}
         rotation={SECONDARY_TREE_ROTATION}
         scale={effectiveSecondaryTreeScale}
+        rustleIntensity={leafRustleIntensity}
       />
       <Html
         position={[
