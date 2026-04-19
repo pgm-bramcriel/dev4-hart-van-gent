@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { Html, OrbitControls } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
 import { folder, useControls } from "leva";
 import Lights from "./scene/Lights";
 import { MainTree } from "./models/MainTree";
@@ -15,6 +17,9 @@ type MainSceneProps = {
 };
 
 type TreeVariant = "sapling" | "main" | "large";
+const CM_TO_CAMERA_ZOOM_OUT = 0.003;
+const MAX_CAMERA_ZOOM_OUT = 1.4;
+const CAMERA_Z_LERP = 0.12;
 
 function getTreeVariant(heightInCm: number | null): TreeVariant {
   if (heightInCm === null) {
@@ -68,6 +73,15 @@ function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
   return modelHeightByVariant[variant] * treeScale + 0.35;
 }
 
+function getCameraZoomOutForGrowth(
+  currentHeightCm: number | null,
+  baselineHeightCm: number | null,
+) {
+  if (currentHeightCm === null || baselineHeightCm === null) return 0;
+  const growthCm = Math.max(0, currentHeightCm - baselineHeightCm);
+  return Math.min(growthCm * CM_TO_CAMERA_ZOOM_OUT, MAX_CAMERA_ZOOM_OUT);
+}
+
 const MainScene = ({
   mainLocationName,
   mainLocationHeightLabel,
@@ -76,6 +90,9 @@ const MainScene = ({
   mainLocationHeightCm,
   secondaryLocationHeightCm,
 }: MainSceneProps) => {
+  const { camera } = useThree();
+  const baselineMainHeightCmRef = useRef<number | null>(null);
+  const baseCameraZRef = useRef<number | null>(null);
   const backTreePosition: [number, number, number] = [-2, -2.08, -2.8];
   const backTreeRotation: [number, number, number] = [0, -0.9, 0];
   const backTreeScale = 0.12;
@@ -148,10 +165,42 @@ const MainScene = ({
       hill3ScaleZ: { value: 2.1, min: 0.1, max: 20, step: 0.1 },
     }),
   });
+
+  useEffect(() => {
+    if (baseCameraZRef.current === null) {
+      baseCameraZRef.current = camera.position.z;
+    }
+  }, [camera]);
+
+  useEffect(() => {
+    if (baselineMainHeightCmRef.current === null && mainLocationHeightCm !== null) {
+      baselineMainHeightCmRef.current = mainLocationHeightCm;
+    }
+  }, [mainLocationHeightCm]);
+
+  const baseCameraZ = baseCameraZRef.current ?? camera.position.z;
+  const cameraZoomOut = getCameraZoomOutForGrowth(
+    mainLocationHeightCm,
+    baselineMainHeightCmRef.current,
+  );
+  const targetCameraZ = baseCameraZ + cameraZoomOut;
+  const baseCameraDistanceToMainTree = baseCameraZ - treePositionZ;
+  const targetCameraDistanceToMainTree = targetCameraZ - treePositionZ;
+  const cameraCompensationScale =
+    baseCameraDistanceToMainTree > 0 && targetCameraDistanceToMainTree > 0
+      ? targetCameraDistanceToMainTree / baseCameraDistanceToMainTree
+      : 1;
+
+  useFrame(() => {
+    camera.position.z += (targetCameraZ - camera.position.z) * CAMERA_Z_LERP;
+    camera.updateProjectionMatrix();
+  });
+
   const mainTreeScaleMultiplier = getTreeScaleMultiplier(mainTreeVariant);
   const secondaryTreeScaleMultiplier =
     getTreeScaleMultiplier(secondaryTreeVariant);
-  const effectiveMainTreeScale = treeScale * mainTreeScaleMultiplier;
+  const effectiveMainTreeScale =
+    treeScale * mainTreeScaleMultiplier * cameraCompensationScale;
   const effectiveSecondaryTreeScale =
     backTreeScale * secondaryTreeScaleMultiplier;
   const mainLabelOffsetY = getLabelOffsetY(
