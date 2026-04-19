@@ -6,6 +6,7 @@ const BASE_RUSTLE_X = 0.022;
 const BASE_RUSTLE_Y = 0.016;
 const BASE_RUSTLE_Z = 0.011;
 const RUSTLE_LERP = 0.085;
+const INTENSITY_SMOOTHING_SPEED = 4.5;
 
 type UseLeafRustleAnimationParams = {
   intensity: number;
@@ -17,14 +18,21 @@ export function useLeafRustleAnimation({
   phaseOffset = 0,
 }: UseLeafRustleAnimationParams) {
   const leavesGroupRef = useRef<Group | null>(null);
+  const smoothedIntensityRef = useRef(0);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const leavesGroup = leavesGroupRef.current;
     if (!leavesGroup) return;
 
-    const rustleIntensity = MathUtils.clamp(intensity, 0, 2);
-    const time =
-      clock.getElapsedTime() * (1 + rustleIntensity * 0.9) + phaseOffset;
+    const targetIntensity = MathUtils.clamp(intensity, 0, 2);
+    smoothedIntensityRef.current = MathUtils.damp(
+      smoothedIntensityRef.current,
+      targetIntensity,
+      INTENSITY_SMOOTHING_SPEED,
+      delta,
+    );
+    const rustleIntensity = smoothedIntensityRef.current;
+    const time = clock.getElapsedTime() + phaseOffset;
 
     const targetX = Math.sin(time * 1.65) * BASE_RUSTLE_X * rustleIntensity;
     const targetY =

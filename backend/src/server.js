@@ -41,14 +41,13 @@ parser.on("data", (line) => {
 
 const PORT = process.env.PORT || 3001;
 
-let test = true;
+app.post("/mock-session", (_req, res) => {
+  runMockHeartbeatSessionOnce();
+  res.status(202).json({ ok: true, message: "Mock heartbeat session started" });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
-
-  if (test) {
-    runMockHeartbeatSessionOnce();
-  }
 });
 
 function handleIncomingPulseLine(line) {

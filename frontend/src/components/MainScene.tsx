@@ -164,7 +164,7 @@ const MainScene = ({
         position={SECONDARY_TREE_POSITION}
         rotation={SECONDARY_TREE_ROTATION}
         scale={effectiveSecondaryTreeScale}
-        rustleIntensity={leafRustleIntensity}
+        rustleIntensity={0}
       />
       <Html
         position={[

@@ -19,6 +19,12 @@ const cameraSettings = {
 
 const HEART_COUNTDOWN_INTERVAL_MS = 30;
 const TREE_GROWTH_DURATION_MS = 1200;
+const SESSION_RUSTLE_START_INTENSITY = 0.2;
+const SESSION_RUSTLE_MAX_INTENSITY = 1;
+const SESSION_RUSTLE_STEP = 0.08;
+const SESSION_RUSTLE_INTERVAL_MS = 1000;
+const RUSTLE_COOLDOWN_STEP = 0.035;
+const RUSTLE_COOLDOWN_INTERVAL_MS = 140;
 
 function startHeartbeatCountdown(
   startValue: number,
@@ -91,10 +97,12 @@ function formatHeightInMeters(heightInCm: number | null) {
 function Home() {
   const [heartValue, setHeartValue] = useState(0);
   const [locations, setLocations] = useState<LocationRow[]>([]);
-  const leafRustleIntensity = 0.2;
+  const [leafRustleIntensity, setLeafRustleIntensity] = useState(0);
   const pendingSessionAverageRef = useRef<number | null>(null);
   const mainLocationRef = useRef<LocationRow | null>(null);
   const heartValueRef = useRef(0);
+  const sessionRustleIntervalRef = useRef<number | null>(null);
+  const rustleCooldownIntervalRef = useRef<number | null>(null);
   const cancelHeartCountdownRef = useRef<(() => void) | null>(null);
   const cancelTreeGrowthRef = useRef<(() => void) | null>(null);
   const configuredMainLocationName = (
@@ -138,11 +146,53 @@ function Home() {
       cancelTreeGrowthRef.current = null;
     }
 
+    function stopSessionRustleRamp() {
+      if (sessionRustleIntervalRef.current !== null) {
+        window.clearInterval(sessionRustleIntervalRef.current);
+        sessionRustleIntervalRef.current = null;
+      }
+    }
+
+    function stopRustleCooldown() {
+      if (rustleCooldownIntervalRef.current !== null) {
+        window.clearInterval(rustleCooldownIntervalRef.current);
+        rustleCooldownIntervalRef.current = null;
+      }
+    }
+
+    function startSessionRustleRamp() {
+      stopSessionRustleRamp();
+      stopRustleCooldown();
+      setLeafRustleIntensity(SESSION_RUSTLE_START_INTENSITY);
+
+      sessionRustleIntervalRef.current = window.setInterval(() => {
+        setLeafRustleIntensity((previousIntensity) =>
+          Math.min(
+            SESSION_RUSTLE_MAX_INTENSITY,
+            previousIntensity + SESSION_RUSTLE_STEP,
+          ),
+        );
+      }, SESSION_RUSTLE_INTERVAL_MS);
+    }
+
+    function startRustleCooldown() {
+      stopRustleCooldown();
+      rustleCooldownIntervalRef.current = window.setInterval(() => {
+        setLeafRustleIntensity((previousIntensity) => {
+          const nextIntensity = Math.max(0, previousIntensity - RUSTLE_COOLDOWN_STEP);
+          if (nextIntensity <= 0) {
+            stopRustleCooldown();
+          }
+          return nextIntensity;
+        });
+      }, RUSTLE_COOLDOWN_INTERVAL_MS);
+    }
+
     async function handleSessionEnd() {
       const averageBpm = pendingSessionAverageRef.current;
       const currentMainLocation = mainLocationRef.current;
       if (averageBpm === null || !currentMainLocation) {
-        return;
+        return false;
       }
 
       stopRunningAnimations();
@@ -184,6 +234,7 @@ function Home() {
               nextHeightCm,
             ),
           );
+          startRustleCooldown();
         },
       );
 
@@ -195,6 +246,8 @@ function Home() {
       if (error) {
         console.error("Error saving grown tree height:", error);
       }
+
+      return true;
     }
 
     socket.onopen = () => {
@@ -215,6 +268,7 @@ function Home() {
 
       if (message.type === "heartbeat-session-start") {
         stopRunningAnimations();
+        startSessionRustleRamp();
         pendingSessionAverageRef.current = null;
         return;
       }
@@ -225,7 +279,13 @@ function Home() {
       }
 
       if (message.type === "heartbeat-session-end") {
-        await handleSessionEnd();
+        stopSessionRustleRamp();
+        stopRustleCooldown();
+        setLeafRustleIntensity(SESSION_RUSTLE_MAX_INTENSITY);
+        const didStartGrowth = await handleSessionEnd();
+        if (!didStartGrowth) {
+          startRustleCooldown();
+        }
         pendingSessionAverageRef.current = null;
       }
     };
@@ -240,6 +300,8 @@ function Home() {
 
     return () => {
       stopRunningAnimations();
+      stopSessionRustleRamp();
+      stopRustleCooldown();
       socket.close();
     };
   }, []);
