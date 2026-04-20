@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 
-const CM_TO_CAMERA_ZOOM_OUT = 0.003;
-const MAX_CAMERA_ZOOM_OUT = 1.4;
+const CM_TO_CAMERA_ZOOM_OUT = 0.008;
+const MAX_CAMERA_ZOOM_OUT = 100;
 const CAMERA_Z_LERP = 0.12;
 
 type UseGrowAnimationParams = {
@@ -34,7 +34,10 @@ export function useGrowAnimation({
   }, [camera]);
 
   useEffect(() => {
-    if (baselineMainHeightCmRef.current === null && mainLocationHeightCm !== null) {
+    if (
+      baselineMainHeightCmRef.current === null &&
+      mainLocationHeightCm !== null
+    ) {
       baselineMainHeightCmRef.current = mainLocationHeightCm;
     }
   }, [mainLocationHeightCm]);
