@@ -1,21 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { MathUtils } from "three";
 
 const CM_TO_CAMERA_ZOOM_OUT = 0.008;
-const MAX_CAMERA_ZOOM_OUT = 100;
-const CAMERA_Z_LERP = 0.12;
+const MAX_CAMERA_ZOOM_OUT = 1.4;
+const CAMERA_Z_FOLLOW_SPEED = 8;
+const GROWTH_KICK_RESPONSE_SPEED = 7;
+const GROWTH_KICK_RETURN_SPEED = 1;
 
 type UseGrowAnimationParams = {
   mainLocationHeightCm: number | null;
   mainTreePositionZ: number;
 };
 
-function getCameraZoomOutForGrowth(
-  currentHeightCm: number | null,
-  baselineHeightCm: number | null,
-) {
-  if (currentHeightCm === null || baselineHeightCm === null) return 0;
-  const growthCm = Math.max(0, currentHeightCm - baselineHeightCm);
+function getCameraZoomOutForGrowth(growthCm: number) {
   return Math.min(growthCm * CM_TO_CAMERA_ZOOM_OUT, MAX_CAMERA_ZOOM_OUT);
 }
 
@@ -24,8 +22,11 @@ export function useGrowAnimation({
   mainTreePositionZ,
 }: UseGrowAnimationParams) {
   const { camera } = useThree();
-  const baselineMainHeightCmRef = useRef<number | null>(null);
+  const previousMainHeightCmRef = useRef<number | null>(null);
   const baseCameraZRef = useRef<number | null>(null);
+  const targetGrowthKickRef = useRef(0);
+  const smoothedGrowthKickRef = useRef(0);
+  const [cameraCompensationScale, setCameraCompensationScale] = useState(1);
 
   useEffect(() => {
     if (baseCameraZRef.current === null) {
@@ -34,32 +35,71 @@ export function useGrowAnimation({
   }, [camera]);
 
   useEffect(() => {
-    if (
-      baselineMainHeightCmRef.current === null &&
-      mainLocationHeightCm !== null
-    ) {
-      baselineMainHeightCmRef.current = mainLocationHeightCm;
+    if (mainLocationHeightCm === null) return;
+
+    if (previousMainHeightCmRef.current === null) {
+      previousMainHeightCmRef.current = mainLocationHeightCm;
+      return;
     }
+
+    const growthCm = Math.max(
+      0,
+      mainLocationHeightCm - previousMainHeightCmRef.current,
+    );
+
+    if (growthCm > 0) {
+      const growthKick = getCameraZoomOutForGrowth(growthCm);
+      targetGrowthKickRef.current = Math.min(
+        targetGrowthKickRef.current + growthKick,
+        MAX_CAMERA_ZOOM_OUT,
+      );
+    }
+
+    previousMainHeightCmRef.current = mainLocationHeightCm;
   }, [mainLocationHeightCm]);
 
-  const baseCameraZ = baseCameraZRef.current ?? camera.position.z;
-  const cameraZoomOut = getCameraZoomOutForGrowth(
-    mainLocationHeightCm,
-    baselineMainHeightCmRef.current,
-  );
-  const targetCameraZ = baseCameraZ + cameraZoomOut;
+  useFrame((_, delta) => {
+    if (baseCameraZRef.current === null) {
+      baseCameraZRef.current = camera.position.z;
+    }
 
-  useFrame(() => {
-    camera.position.z += (targetCameraZ - camera.position.z) * CAMERA_Z_LERP;
+    const baseCameraZ = baseCameraZRef.current;
+    targetGrowthKickRef.current = MathUtils.damp(
+      targetGrowthKickRef.current,
+      0,
+      GROWTH_KICK_RETURN_SPEED,
+      delta,
+    );
+    smoothedGrowthKickRef.current = MathUtils.damp(
+      smoothedGrowthKickRef.current,
+      targetGrowthKickRef.current,
+      GROWTH_KICK_RESPONSE_SPEED,
+      delta,
+    );
+
+    const targetCameraZ = baseCameraZ + smoothedGrowthKickRef.current;
+    camera.position.z = MathUtils.damp(
+      camera.position.z,
+      targetCameraZ,
+      CAMERA_Z_FOLLOW_SPEED,
+      delta,
+    );
     camera.updateProjectionMatrix();
-  });
 
-  const baseCameraDistanceToMainTree = baseCameraZ - mainTreePositionZ;
-  const targetCameraDistanceToMainTree = targetCameraZ - mainTreePositionZ;
-  const cameraCompensationScale =
-    baseCameraDistanceToMainTree > 0 && targetCameraDistanceToMainTree > 0
-      ? targetCameraDistanceToMainTree / baseCameraDistanceToMainTree
-      : 1;
+    const baseCameraDistanceToMainTree = baseCameraZ - mainTreePositionZ;
+    const currentCameraDistanceToMainTree =
+      camera.position.z - mainTreePositionZ;
+    const nextCameraCompensationScale =
+      baseCameraDistanceToMainTree > 0 && currentCameraDistanceToMainTree > 0
+        ? currentCameraDistanceToMainTree / baseCameraDistanceToMainTree
+        : 1;
+
+    setCameraCompensationScale((currentScale) =>
+      Math.abs(currentScale - nextCameraCompensationScale) < 0.0005
+        ? currentScale
+        : nextCameraCompensationScale,
+    );
+  });
 
   return { cameraCompensationScale };
 }
