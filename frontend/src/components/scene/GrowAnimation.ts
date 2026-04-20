@@ -3,9 +3,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { MathUtils } from "three";
 
 const CM_TO_CAMERA_ZOOM_OUT = 0.008;
-const MAX_CAMERA_ZOOM_OUT = 1.4;
 const CAMERA_Z_FOLLOW_SPEED = 8;
-const GROWTH_KICK_RESPONSE_SPEED = 7;
+const GROWTH_KICK_RESPONSE_SPEED = 5;
 const GROWTH_KICK_RETURN_SPEED = 1;
 
 type UseGrowAnimationParams = {
@@ -14,7 +13,7 @@ type UseGrowAnimationParams = {
 };
 
 function getCameraZoomOutForGrowth(growthCm: number) {
-  return Math.min(growthCm * CM_TO_CAMERA_ZOOM_OUT, MAX_CAMERA_ZOOM_OUT);
+  return growthCm * CM_TO_CAMERA_ZOOM_OUT;
 }
 
 export function useGrowAnimation({
@@ -49,10 +48,7 @@ export function useGrowAnimation({
 
     if (growthCm > 0) {
       const growthKick = getCameraZoomOutForGrowth(growthCm);
-      targetGrowthKickRef.current = Math.min(
-        targetGrowthKickRef.current + growthKick,
-        MAX_CAMERA_ZOOM_OUT,
-      );
+      targetGrowthKickRef.current += growthKick;
     }
 
     previousMainHeightCmRef.current = mainLocationHeightCm;
