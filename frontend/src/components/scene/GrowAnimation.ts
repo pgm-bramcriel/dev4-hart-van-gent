@@ -5,7 +5,8 @@ import { MathUtils } from "three";
 const CM_TO_CAMERA_ZOOM_OUT = 0.008;
 const CAMERA_Z_FOLLOW_SPEED = 8;
 const GROWTH_KICK_RESPONSE_SPEED = 5;
-const GROWTH_KICK_RETURN_SPEED = 1;
+const GROWTH_KICK_RETURN_SPEED = 0.4;
+const GROWTH_KICK_SHRINK_DELAY_MS = 4000;
 
 type UseGrowAnimationParams = {
   mainLocationHeightCm: number | null;
@@ -25,6 +26,7 @@ export function useGrowAnimation({
   const baseCameraZRef = useRef<number | null>(null);
   const targetGrowthKickRef = useRef(0);
   const smoothedGrowthKickRef = useRef(0);
+  const lastGrowthKickAtRef = useRef(0);
   const [cameraCompensationScale, setCameraCompensationScale] = useState(1);
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export function useGrowAnimation({
     if (growthCm > 0) {
       const growthKick = getCameraZoomOutForGrowth(growthCm);
       targetGrowthKickRef.current += growthKick;
+      lastGrowthKickAtRef.current = Date.now();
     }
 
     previousMainHeightCmRef.current = mainLocationHeightCm;
@@ -60,12 +63,16 @@ export function useGrowAnimation({
     }
 
     const baseCameraZ = baseCameraZRef.current;
-    targetGrowthKickRef.current = MathUtils.damp(
-      targetGrowthKickRef.current,
-      0,
-      GROWTH_KICK_RETURN_SPEED,
-      delta,
-    );
+    const shrinkDelayPassed =
+      Date.now() - lastGrowthKickAtRef.current >= GROWTH_KICK_SHRINK_DELAY_MS;
+    if (shrinkDelayPassed) {
+      targetGrowthKickRef.current = MathUtils.damp(
+        targetGrowthKickRef.current,
+        0,
+        GROWTH_KICK_RETURN_SPEED,
+        delta,
+      );
+    }
     smoothedGrowthKickRef.current = MathUtils.damp(
       smoothedGrowthKickRef.current,
       targetGrowthKickRef.current,
