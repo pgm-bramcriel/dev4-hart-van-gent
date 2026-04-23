@@ -1,4 +1,6 @@
 import { Html, OrbitControls } from "@react-three/drei";
+import type { ThreeElements } from "@react-three/fiber";
+import type { ComponentType } from "react";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
 import { MainTree } from "./models/MainTree";
@@ -16,6 +18,12 @@ type MainSceneProps = {
 };
 
 type TreeVariant = "sapling" | "main" | "large";
+type TreeModelProps = ThreeElements["group"] & {
+  rustleIntensity?: number;
+  leafGrowthProgress?: number;
+};
+const GROWTH_STEP_CM = 70;
+const FINAL_GROWTH_HEIGHT_CM = 2000;
 const MAIN_TREE_POSITION: [number, number, number] = [0, -1.4, 0];
 const MAIN_TREE_ROTATION: [number, number, number] = [0, -0.8, 0];
 const MAIN_TREE_BASE_SCALE = 0.18;
@@ -47,7 +55,7 @@ function getTreeVariant(heightInCm: number | null): TreeVariant {
   return "large";
 }
 
-function getTreeComponent(variant: TreeVariant) {
+function getTreeComponent(variant: TreeVariant): ComponentType<TreeModelProps> {
   if (variant === "sapling") {
     return TreeSapling;
   }
@@ -69,6 +77,43 @@ function getTreeScaleMultiplier(variant: TreeVariant) {
   }
 
   return 1;
+}
+
+function getVariantRangeCm(variant: TreeVariant) {
+  if (variant === "sapling") {
+    return { start: 0, end: 300 };
+  }
+
+  if (variant === "main") {
+    return { start: 300, end: 800 };
+  }
+
+  return { start: 800, end: FINAL_GROWTH_HEIGHT_CM };
+}
+
+function getTreeLeafGrowthProgress(
+  heightInCm: number | null,
+  variant: TreeVariant,
+) {
+  if (heightInCm === null) {
+    return 1;
+  }
+
+  const { start, end } = getVariantRangeCm(variant);
+  const clampedHeight = Math.max(0, Math.min(heightInCm, FINAL_GROWTH_HEIGHT_CM));
+
+  if (clampedHeight <= start) {
+    return 0;
+  }
+
+  if (clampedHeight >= end) {
+    return 1;
+  }
+
+  const steppedHeight =
+    start + Math.floor((clampedHeight - start) / GROWTH_STEP_CM) * GROWTH_STEP_CM;
+
+  return (steppedHeight - start) / (end - start);
 }
 
 function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
@@ -102,6 +147,14 @@ const MainScene = ({
   const mainTreeScaleMultiplier = getTreeScaleMultiplier(mainTreeVariant);
   const secondaryTreeScaleMultiplier =
     getTreeScaleMultiplier(secondaryTreeVariant);
+  const mainLeafGrowthProgress = getTreeLeafGrowthProgress(
+    mainLocationHeightCm,
+    mainTreeVariant,
+  );
+  const secondaryLeafGrowthProgress = getTreeLeafGrowthProgress(
+    secondaryLocationHeightCm,
+    secondaryTreeVariant,
+  );
   const effectiveMainTreeScale =
     MAIN_TREE_BASE_SCALE * mainTreeScaleMultiplier * cameraCompensationScale;
   const effectiveSecondaryTreeScale =
@@ -142,6 +195,7 @@ const MainScene = ({
         rotation={MAIN_TREE_ROTATION}
         scale={effectiveMainTreeScale}
         rustleIntensity={leafRustleIntensity}
+        leafGrowthProgress={mainLeafGrowthProgress}
       />
       <Html
         position={[
@@ -165,6 +219,7 @@ const MainScene = ({
         rotation={SECONDARY_TREE_ROTATION}
         scale={effectiveSecondaryTreeScale}
         rustleIntensity={0}
+        leafGrowthProgress={secondaryLeafGrowthProgress}
       />
       <Html
         position={[

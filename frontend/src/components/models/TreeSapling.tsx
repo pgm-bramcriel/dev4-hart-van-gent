@@ -22,9 +22,14 @@ type GLTFResult = GLTF & {
 
 type TreeProps = ThreeElements["group"] & {
   rustleIntensity?: number;
+  leafGrowthProgress?: number;
 };
 
-export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
+export function TreeSapling({
+  rustleIntensity = 0,
+  leafGrowthProgress = 1,
+  ...props
+}: TreeProps) {
   const { nodes, materials } = useGLTF(
     "/models/tree_sapling.glb",
   ) as unknown as GLTFResult;
@@ -32,6 +37,14 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
     intensity: rustleIntensity,
     phaseOffset: 1.2,
   });
+  const totalLeaves = 6;
+  const baseVisibleLeaves = 3;
+  const visibleLeafCount = Math.min(
+    totalLeaves,
+    baseVisibleLeaves +
+      Math.ceil(Math.max(0, Math.min(1, leafGrowthProgress)) * (totalLeaves - baseVisibleLeaves)),
+  );
+  const isLeafVisible = (index: number) => index < visibleLeafCount;
 
   return (
     <group {...props} dispose={null}>
@@ -47,6 +60,7 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(0)}
           geometry={nodes.Icosphere001.geometry}
           material={materials.Leaves}
           position={[-0.102, 1.176, -0.441]}
@@ -56,6 +70,7 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(1)}
           geometry={nodes.Icosphere007.geometry}
           material={materials.Leaves}
           position={[-0.41, 0.928, -0.024]}
@@ -65,6 +80,7 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(2)}
           geometry={nodes.Icosphere002.geometry}
           material={materials.Leaves}
           position={[-0.01, 0.802, 0.603]}
@@ -74,6 +90,7 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(3)}
           geometry={nodes.Icosphere005.geometry}
           material={materials.Leaves}
           position={[0.02, 1.8, -0.028]}
@@ -83,6 +100,7 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(4)}
           geometry={nodes.Icosphere006.geometry}
           material={materials.Leaves}
           position={[0.45, 1.417, -0.057]}
@@ -92,6 +110,7 @@ export function TreeSapling({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(5)}
           geometry={nodes.Icosphere003.geometry}
           material={materials.Leaves}
           position={[0.103, 1.524, 0.373]}

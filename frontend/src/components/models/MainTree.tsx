@@ -26,9 +26,14 @@ type GLTFResult = GLTF & {
 
 type TreeProps = ThreeElements["group"] & {
   rustleIntensity?: number;
+  leafGrowthProgress?: number;
 };
 
-export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
+export function MainTree({
+  rustleIntensity = 0,
+  leafGrowthProgress = 1,
+  ...props
+}: TreeProps) {
   const { nodes, materials } = useGLTF(
     "/models/tree_main.glb",
   ) as unknown as GLTFResult;
@@ -36,6 +41,14 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
     intensity: rustleIntensity,
     phaseOffset: 0.25,
   });
+  const totalLeaves = 10;
+  const baseVisibleLeaves = 4;
+  const visibleLeafCount = Math.min(
+    totalLeaves,
+    baseVisibleLeaves +
+      Math.ceil(Math.max(0, Math.min(1, leafGrowthProgress)) * (totalLeaves - baseVisibleLeaves)),
+  );
+  const isLeafVisible = (index: number) => index < visibleLeafCount;
 
   return (
     <group {...props} dispose={null}>
@@ -50,6 +63,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(0)}
           geometry={nodes.Icosphere.geometry}
           material={materials.Leaves}
           position={[0, 11.121, 0]}
@@ -58,6 +72,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(1)}
           geometry={nodes.Icosphere001.geometry}
           material={materials.Leaves}
           position={[3.872, 9.129, 1.333]}
@@ -67,6 +82,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(2)}
           geometry={nodes.Icosphere002.geometry}
           material={materials.Leaves}
           position={[5.849, 9.797, -0.444]}
@@ -75,6 +91,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(3)}
           geometry={nodes.Icosphere003.geometry}
           material={materials.Leaves}
           position={[4.317, 9.663, -2.86]}
@@ -84,6 +101,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(4)}
           geometry={nodes.Icosphere004.geometry}
           material={materials.Leaves}
           position={[1.487, 9.129, 5.187]}
@@ -93,6 +111,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(5)}
           geometry={nodes.Icosphere005.geometry}
           material={materials.Leaves}
           position={[-3.435, 9.699, -1.431]}
@@ -102,6 +121,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(6)}
           geometry={nodes.Icosphere006.geometry}
           material={materials.Leaves}
           position={[-1.778, 9.766, -3.612]}
@@ -111,6 +131,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(7)}
           geometry={nodes.Icosphere007.geometry}
           material={materials.Leaves}
           position={[-4.382, 9.519, 1.639]}
@@ -120,6 +141,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(8)}
           geometry={nodes.Icosphere008.geometry}
           material={materials.Leaves}
           position={[-1.786, 9.272, 3.872]}
@@ -129,6 +151,7 @@ export function MainTree({ rustleIntensity = 0, ...props }: TreeProps) {
         <mesh
           castShadow
           receiveShadow
+          visible={isLeafVisible(9)}
           geometry={nodes.Icosphere009.geometry}
           material={materials.Leaves}
           position={[0.795, 7.495, -3.773]}
