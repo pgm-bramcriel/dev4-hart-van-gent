@@ -1,9 +1,7 @@
 import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
-import { MainTree } from "./models/MainTree";
-import { TreeLarge } from "./models/TreeLarge";
-import { TreeSapling } from "./models/TreeSapling";
+import { LSystemTree } from "./models/LSystemTree";
 
 type MainSceneProps = {
   mainLocationName: string;
@@ -15,10 +13,12 @@ type MainSceneProps = {
   leafRustleIntensity: number;
 };
 
-type TreeVariant = "sapling" | "main" | "large";
 const MAIN_TREE_POSITION: [number, number, number] = [0, -1.4, 0];
 const MAIN_TREE_ROTATION: [number, number, number] = [0, -0.8, 0];
 const MAIN_TREE_BASE_SCALE = 0.18;
+const PROCEDURAL_TREE_MIN_MODEL_HEIGHT = 8;
+const PROCEDURAL_TREE_MAX_MODEL_HEIGHT = 13;
+const TREE_MAX_HEIGHT_REACHED_AT_M = 30;
 const SECONDARY_TREE_POSITION: [number, number, number] = [-2, -2.08, -2.8];
 const SECONDARY_TREE_ROTATION: [number, number, number] = [0, -0.9, 0];
 const SECONDARY_TREE_BASE_SCALE = 0.12;
@@ -29,56 +29,17 @@ const HILL_2_SCALE: [number, number, number] = [4.2, 2.1, 2.4];
 const HILL_3_POSITION: [number, number, number] = [-3.8, -3.1, -0.8];
 const HILL_3_SCALE: [number, number, number] = [4.8, 1.7, 2.1];
 
-function getTreeVariant(heightInCm: number | null): TreeVariant {
-  if (heightInCm === null) {
-    return "main";
-  }
-
-  const heightInMeters = heightInCm / 100;
-
-  if (heightInMeters < 3) {
-    return "sapling";
-  }
-
-  if (heightInMeters < 8) {
-    return "main";
-  }
-
-  return "large";
+function getModelHeightForMeters(heightCm: number | null) {
+  const meters = Math.max(1, (heightCm ?? 100) / 100);
+  const ratio = Math.min(1, (meters - 1) / (TREE_MAX_HEIGHT_REACHED_AT_M - 1));
+  return (
+    PROCEDURAL_TREE_MIN_MODEL_HEIGHT +
+    (PROCEDURAL_TREE_MAX_MODEL_HEIGHT - PROCEDURAL_TREE_MIN_MODEL_HEIGHT) * ratio
+  );
 }
 
-function getTreeComponent(variant: TreeVariant) {
-  if (variant === "sapling") {
-    return TreeSapling;
-  }
-
-  if (variant === "large") {
-    return TreeLarge;
-  }
-
-  return MainTree;
-}
-
-function getTreeScaleMultiplier(variant: TreeVariant) {
-  if (variant === "sapling") {
-    return 2;
-  }
-
-  if (variant === "large") {
-    return 0.65;
-  }
-
-  return 1;
-}
-
-function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
-  const modelHeightByVariant = {
-    sapling: 2,
-    main: 13,
-    large: 20,
-  } as const;
-
-  return modelHeightByVariant[variant] * treeScale + 0.35;
+function getLabelOffsetY(treeScale: number, treeHeightCm: number | null) {
+  return getModelHeightForMeters(treeHeightCm) * treeScale + 0.35;
 }
 
 const MainScene = ({
@@ -90,29 +51,21 @@ const MainScene = ({
   secondaryLocationHeightCm,
   leafRustleIntensity,
 }: MainSceneProps) => {
-  const mainTreeVariant = getTreeVariant(mainLocationHeightCm);
-  const secondaryTreeVariant = getTreeVariant(secondaryLocationHeightCm);
-  const MainLocationTree = getTreeComponent(mainTreeVariant);
-  const SecondaryLocationTree = getTreeComponent(secondaryTreeVariant);
   const { cameraCompensationScale } = useGrowAnimation({
     mainLocationHeightCm,
     mainTreePositionZ: MAIN_TREE_POSITION[2],
   });
 
-  const mainTreeScaleMultiplier = getTreeScaleMultiplier(mainTreeVariant);
-  const secondaryTreeScaleMultiplier =
-    getTreeScaleMultiplier(secondaryTreeVariant);
   const effectiveMainTreeScale =
-    MAIN_TREE_BASE_SCALE * mainTreeScaleMultiplier * cameraCompensationScale;
-  const effectiveSecondaryTreeScale =
-    SECONDARY_TREE_BASE_SCALE * secondaryTreeScaleMultiplier;
+    MAIN_TREE_BASE_SCALE * cameraCompensationScale;
+  const effectiveSecondaryTreeScale = SECONDARY_TREE_BASE_SCALE;
   const mainLabelOffsetY = getLabelOffsetY(
-    mainTreeVariant,
     effectiveMainTreeScale,
+    mainLocationHeightCm,
   );
   const secondaryLabelOffsetY = getLabelOffsetY(
-    secondaryTreeVariant,
     effectiveSecondaryTreeScale,
+    secondaryLocationHeightCm,
   );
 
   return (
@@ -137,11 +90,13 @@ const MainScene = ({
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
 
-      <MainLocationTree
+      <LSystemTree
         position={MAIN_TREE_POSITION}
         rotation={MAIN_TREE_ROTATION}
         scale={effectiveMainTreeScale}
+        heightCm={mainLocationHeightCm}
         rustleIntensity={leafRustleIntensity}
+        seed={1}
       />
       <Html
         position={[
@@ -160,11 +115,13 @@ const MainScene = ({
           </p>
         </div>
       </Html>
-      <SecondaryLocationTree
+      <LSystemTree
         position={SECONDARY_TREE_POSITION}
         rotation={SECONDARY_TREE_ROTATION}
         scale={effectiveSecondaryTreeScale}
+        heightCm={secondaryLocationHeightCm}
         rustleIntensity={0}
+        seed={2}
       />
       <Html
         position={[
