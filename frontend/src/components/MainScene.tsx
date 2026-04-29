@@ -1,4 +1,5 @@
 import { Html, OrbitControls } from "@react-three/drei";
+import { Clouds } from "./scene/Clouds";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
 import { MainTreeRoots2D } from "./scene/MainTreeRoots2D";
@@ -145,6 +146,7 @@ const MainScene = ({
         enableRotate={false}
       />
       <Lights />
+      <Clouds />
 
       <mesh position={HILL_1_POSITION} scale={HILL_1_SCALE}>
         <sphereGeometry args={[1, 48, 48]} />
