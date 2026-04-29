@@ -24,6 +24,7 @@ const MAIN_TREE_BASE_SCALE = 0.18;
 const SECONDARY_TREE_POSITION: [number, number, number] = [-2, -2.08, -2.8];
 const SECONDARY_TREE_ROTATION: [number, number, number] = [0, -0.9, 0];
 const SECONDARY_TREE_BASE_SCALE = 0.12;
+const SAPLING_Y_OFFSET = 0.14;
 const HILL_1_POSITION: [number, number, number] = [3.3, -3.0, -1.4];
 const HILL_1_SCALE: [number, number, number] = [5.6, 1.8, 2.2];
 const HILL_2_POSITION: [number, number, number] = [0, -3.3, 0.4];
@@ -73,6 +74,14 @@ function getTreeScaleMultiplier(variant: TreeVariant) {
   return 1;
 }
 
+function getTreeYOffset(variant: TreeVariant) {
+  if (variant === "sapling") {
+    return SAPLING_Y_OFFSET;
+  }
+
+  return 0;
+}
+
 function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
   const modelHeightByVariant = {
     sapling: 2,
@@ -109,6 +118,16 @@ const MainScene = ({
     MAIN_TREE_BASE_SCALE * mainTreeScaleMultiplier * cameraCompensationScale;
   const effectiveSecondaryTreeScale =
     SECONDARY_TREE_BASE_SCALE * secondaryTreeScaleMultiplier;
+  const mainTreePosition: [number, number, number] = [
+    MAIN_TREE_POSITION[0],
+    MAIN_TREE_POSITION[1] + getTreeYOffset(mainTreeVariant),
+    MAIN_TREE_POSITION[2],
+  ];
+  const secondaryTreePosition: [number, number, number] = [
+    SECONDARY_TREE_POSITION[0],
+    SECONDARY_TREE_POSITION[1] + getTreeYOffset(secondaryTreeVariant),
+    SECONDARY_TREE_POSITION[2],
+  ];
   const mainLabelOffsetY = getLabelOffsetY(
     mainTreeVariant,
     effectiveMainTreeScale,
@@ -143,19 +162,20 @@ const MainScene = ({
       <MainTreeRoots2D
         fillProgress={rootsFillProgress}
         growthScale={cameraCompensationScale}
+        treeVariant={mainTreeVariant}
       />
 
       <MainLocationTree
-        position={MAIN_TREE_POSITION}
+        position={mainTreePosition}
         rotation={MAIN_TREE_ROTATION}
         scale={effectiveMainTreeScale}
         rustleIntensity={leafRustleIntensity}
       />
       <Html
         position={[
-          MAIN_TREE_POSITION[0],
-          MAIN_TREE_POSITION[1] + mainLabelOffsetY,
-          MAIN_TREE_POSITION[2],
+          mainTreePosition[0],
+          mainTreePosition[1] + mainLabelOffsetY,
+          mainTreePosition[2],
         ]}
         transform
         center
@@ -169,16 +189,16 @@ const MainScene = ({
         </div>
       </Html>
       <SecondaryLocationTree
-        position={SECONDARY_TREE_POSITION}
+        position={secondaryTreePosition}
         rotation={SECONDARY_TREE_ROTATION}
         scale={effectiveSecondaryTreeScale}
         rustleIntensity={0}
       />
       <Html
         position={[
-          SECONDARY_TREE_POSITION[0],
-          SECONDARY_TREE_POSITION[1] + secondaryLabelOffsetY,
-          SECONDARY_TREE_POSITION[2],
+          secondaryTreePosition[0],
+          secondaryTreePosition[1] + secondaryLabelOffsetY,
+          secondaryTreePosition[2],
         ]}
         transform
         center

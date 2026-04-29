@@ -3,33 +3,60 @@ import { useEffect, useRef } from "react";
 import { Color, MathUtils } from "three";
 
 const ROOTS_TEXTURE_PATH = "/images/roots_v3.svg";
+const ROOTS_SAPLING_TEXTURE_PATH = "/images/roots_small_svg.svg";
 const ROOTS_FILL_START_COLOR = new Color("#F5B041");
 const ROOTS_FILL_END_COLOR = new Color("#FFC300");
-const ROOTS_BASE_POSITION: [number, number, number] = [-0.172, -2.29, -1];
-const ROOTS_BASE_SCALE = 1.12;
-const ROOTS_GROWTH_ANCHOR_X = 0.22;
-const ROOTS_GROWTH_ANCHOR_Y = 0.5;
+const ROOTS_VARIANT_CONFIG = {
+  sapling: {
+    basePosition: [-0.265, -2.05, -1] as [number, number, number],
+    baseScale: 0.8,
+    growthAnchorX: 0.22,
+    growthAnchorY: 0.5,
+  },
+  main: {
+    basePosition: [-0.127, -2.12, -1] as [number, number, number],
+    baseScale: 0.88,
+    growthAnchorX: 0.22,
+    growthAnchorY: 0.5,
+  },
+  large: {
+    basePosition: [-0.172, -2.29, -1] as [number, number, number],
+    baseScale: 1.12,
+    growthAnchorX: 0.22,
+    growthAnchorY: 0.5,
+  },
+} as const;
+
+type TreeVariant = keyof typeof ROOTS_VARIANT_CONFIG;
 
 type MainTreeRoots2DProps = {
   fillProgress: number;
   growthScale: number;
+  treeVariant: TreeVariant;
 };
 
 export function MainTreeRoots2D({
   fillProgress,
   growthScale,
+  treeVariant,
 }: MainTreeRoots2DProps) {
-  const rootsTexture = useTexture(ROOTS_TEXTURE_PATH);
+  const [rootsTexture, saplingRootsTexture] = useTexture([
+    ROOTS_TEXTURE_PATH,
+    ROOTS_SAPLING_TEXTURE_PATH,
+  ]);
   const shaderRef = useRef<{
     uniforms: Record<string, { value: unknown }>;
   } | null>(null);
+  const rootsConfig = ROOTS_VARIANT_CONFIG[treeVariant];
+  const activeRootsTexture =
+    treeVariant === "sapling" ? saplingRootsTexture : rootsTexture;
   const clampedFillProgress = MathUtils.clamp(fillProgress, 0, 1);
   const safeGrowthScale = Math.max(growthScale, 0);
   const growthDelta = safeGrowthScale - 1;
   const rootsPosition: [number, number, number] = [
-    ROOTS_BASE_POSITION[0] - growthDelta * ROOTS_GROWTH_ANCHOR_X,
-    ROOTS_BASE_POSITION[1] - growthDelta * ROOTS_GROWTH_ANCHOR_Y,
-    ROOTS_BASE_POSITION[2],
+    rootsConfig.basePosition[0] - growthDelta * rootsConfig.growthAnchorX,
+    rootsConfig.basePosition[1] - growthDelta * rootsConfig.growthAnchorY,
+    rootsConfig.basePosition[2],
   ];
 
   useEffect(() => {
@@ -43,13 +70,13 @@ export function MainTreeRoots2D({
   return (
     <mesh
       position={rootsPosition}
-      scale={ROOTS_BASE_SCALE * safeGrowthScale}
+      scale={rootsConfig.baseScale * safeGrowthScale}
       renderOrder={8}
       frustumCulled={false}
     >
       <planeGeometry args={[2.6, 1.46]} />
       <meshBasicMaterial
-        map={rootsTexture}
+        map={activeRootsTexture}
         transparent
         depthTest={false}
         depthWrite={false}
