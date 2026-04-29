@@ -140,7 +140,10 @@ const MainScene = ({
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
 
-      <MainTreeRoots2D fillProgress={rootsFillProgress} />
+      <MainTreeRoots2D
+        fillProgress={rootsFillProgress}
+        growthScale={cameraCompensationScale}
+      />
 
       <MainLocationTree
         position={MAIN_TREE_POSITION}

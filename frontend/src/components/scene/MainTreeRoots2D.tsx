@@ -5,17 +5,32 @@ import { Color, MathUtils } from "three";
 const ROOTS_TEXTURE_PATH = "/images/roots_v3.svg";
 const ROOTS_FILL_START_COLOR = new Color("#F5B041");
 const ROOTS_FILL_END_COLOR = new Color("#FFC300");
+const ROOTS_BASE_POSITION: [number, number, number] = [-0.172, -2.29, -1];
+const ROOTS_BASE_SCALE = 1.12;
+const ROOTS_GROWTH_ANCHOR_X = 0.22;
+const ROOTS_GROWTH_ANCHOR_Y = 0.5;
 
 type MainTreeRoots2DProps = {
   fillProgress: number;
+  growthScale: number;
 };
 
-export function MainTreeRoots2D({ fillProgress }: MainTreeRoots2DProps) {
+export function MainTreeRoots2D({
+  fillProgress,
+  growthScale,
+}: MainTreeRoots2DProps) {
   const rootsTexture = useTexture(ROOTS_TEXTURE_PATH);
   const shaderRef = useRef<{
     uniforms: Record<string, { value: unknown }>;
   } | null>(null);
   const clampedFillProgress = MathUtils.clamp(fillProgress, 0, 1);
+  const safeGrowthScale = Math.max(growthScale, 0);
+  const growthDelta = safeGrowthScale - 1;
+  const rootsPosition: [number, number, number] = [
+    ROOTS_BASE_POSITION[0] - growthDelta * ROOTS_GROWTH_ANCHOR_X,
+    ROOTS_BASE_POSITION[1] - growthDelta * ROOTS_GROWTH_ANCHOR_Y,
+    ROOTS_BASE_POSITION[2],
+  ];
 
   useEffect(() => {
     if (!shaderRef.current) {
@@ -27,8 +42,8 @@ export function MainTreeRoots2D({ fillProgress }: MainTreeRoots2DProps) {
 
   return (
     <mesh
-      position={[-0.172, -2.29, -1]}
-      scale={1.12}
+      position={rootsPosition}
+      scale={ROOTS_BASE_SCALE * safeGrowthScale}
       renderOrder={8}
       frustumCulled={false}
     >
