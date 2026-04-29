@@ -1,7 +1,9 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import { EffectComposer, Vignette } from "@react-three/postprocessing";
 import MainScene from "@/components/MainScene";
 import heartIcon from "@/assets/heart_icon.svg";
+import { BlendFunction } from "postprocessing";
 import { supabase } from "@/utils/supabase";
 import { parseHeartbeatWsMessage } from "@/utils/heartbeatMessages";
 import {
@@ -26,6 +28,10 @@ const SESSION_RUSTLE_INTERVAL_MS = 1000;
 const RUSTLE_COOLDOWN_STEP = 0.035;
 const RUSTLE_COOLDOWN_INTERVAL_MS = 140;
 const ROOTS_FILL_TO_FULL_DURATION_MS = 3000;
+const SESSION_SCREEN_FX_RAMP_DURATION_MS = 9000;
+const SESSION_SCREEN_FX_TICK_MS = 80;
+const SESSION_SCREEN_FX_PULSE_PERIOD_MS = 1000;
+const SESSION_SCREEN_FX_FADE_OUT_MS = 650;
 
 function startHeartbeatCountdown(
   startValue: number,
@@ -100,6 +106,8 @@ function Home() {
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [leafRustleIntensity, setLeafRustleIntensity] = useState(0);
   const [rootsFillProgress, setRootsFillProgress] = useState(0);
+  const [isSessionScreenFxActive, setIsSessionScreenFxActive] = useState(false);
+  const [sessionScreenFxStrength, setSessionScreenFxStrength] = useState(0);
   const pendingSessionAverageRef = useRef<number | null>(null);
   const mainLocationRef = useRef<LocationRow | null>(null);
   const heartValueRef = useRef(0);
@@ -109,6 +117,9 @@ function Home() {
   const cancelTreeGrowthRef = useRef<(() => void) | null>(null);
   const rootsFillAnimationFrameRef = useRef<number | null>(null);
   const rootsFillAnimationRunIdRef = useRef(0);
+  const sessionScreenFxIntervalRef = useRef<number | null>(null);
+  const sessionScreenFxStartedAtRef = useRef(0);
+  const sessionScreenFxFadeFrameRef = useRef<number | null>(null);
   const configuredMainLocationName = (
     import.meta.env.VITE_MAIN_LOCATION ??
     import.meta.env.MAIN_LOCATION ??
@@ -175,6 +186,75 @@ function Home() {
       if (reset) {
         setRootsFillProgress(0);
       }
+    }
+
+    function stopSessionScreenFx(shouldFadeOut = false) {
+      if (sessionScreenFxIntervalRef.current !== null) {
+        window.clearInterval(sessionScreenFxIntervalRef.current);
+        sessionScreenFxIntervalRef.current = null;
+      }
+
+      if (sessionScreenFxFadeFrameRef.current !== null) {
+        window.cancelAnimationFrame(sessionScreenFxFadeFrameRef.current);
+        sessionScreenFxFadeFrameRef.current = null;
+      }
+
+      if (!shouldFadeOut) {
+        setIsSessionScreenFxActive(false);
+        setSessionScreenFxStrength(0);
+        return;
+      }
+
+      const initialStrength = sessionScreenFxStrength;
+      const startedAt = performance.now();
+
+      const animateFadeOut = (now: number) => {
+        const progress = Math.min(
+          (now - startedAt) / SESSION_SCREEN_FX_FADE_OUT_MS,
+          1,
+        );
+        const nextStrength = initialStrength * (1 - progress);
+        setSessionScreenFxStrength(nextStrength);
+
+        if (progress >= 1) {
+          setIsSessionScreenFxActive(false);
+          setSessionScreenFxStrength(0);
+          sessionScreenFxFadeFrameRef.current = null;
+          return;
+        }
+
+        sessionScreenFxFadeFrameRef.current =
+          window.requestAnimationFrame(animateFadeOut);
+      };
+
+      sessionScreenFxFadeFrameRef.current =
+        window.requestAnimationFrame(animateFadeOut);
+    }
+
+    function startSessionScreenFx() {
+      stopSessionScreenFx();
+
+      sessionScreenFxStartedAtRef.current = performance.now();
+      setIsSessionScreenFxActive(true);
+      setSessionScreenFxStrength(0.18);
+
+      sessionScreenFxIntervalRef.current = window.setInterval(() => {
+        const elapsedMs = performance.now() - sessionScreenFxStartedAtRef.current;
+        const rampProgress = Math.min(
+          elapsedMs / SESSION_SCREEN_FX_RAMP_DURATION_MS,
+          1,
+        );
+        const pulse =
+          (Math.sin((elapsedMs / SESSION_SCREEN_FX_PULSE_PERIOD_MS) * Math.PI * 2) +
+            1) /
+          2;
+        const subtleToIntense = 0.35 + rampProgress * 0.85;
+        const pulsedStrength = Math.min(
+          1.2,
+          subtleToIntense * (0.55 + pulse * 0.55),
+        );
+        setSessionScreenFxStrength(pulsedStrength);
+      }, SESSION_SCREEN_FX_TICK_MS);
     }
 
     function animateRootsFillToFull(durationMs: number) {
@@ -326,6 +406,7 @@ function Home() {
       if (message.type === "heartbeat-session-start") {
         stopRunningAnimations();
         startSessionRustleRamp();
+        startSessionScreenFx();
         stopRootsFillAnimation(true);
         pendingSessionAverageRef.current = null;
         return;
@@ -339,6 +420,7 @@ function Home() {
       if (message.type === "heartbeat-session-end") {
         stopSessionRustleRamp();
         stopRustleCooldown();
+        stopSessionScreenFx(true);
         setLeafRustleIntensity(SESSION_RUSTLE_MAX_INTENSITY);
         const didFinishRootsFill = await animateRootsFillToFull(
           ROOTS_FILL_TO_FULL_DURATION_MS,
@@ -368,6 +450,7 @@ function Home() {
       stopSessionRustleRamp();
       stopRustleCooldown();
       stopRootsFillAnimation(true);
+      stopSessionScreenFx();
       socket.close();
     };
   }, []);
@@ -390,8 +473,29 @@ function Home() {
     getLocations();
   }, []);
 
+  const cornerOverlayOpacity = Math.min(0.82, sessionScreenFxStrength * 0.58);
+  const vignetteDarkness = 0.1 + sessionScreenFxStrength * 0.24;
+  const vignetteOffset = 0.72 - sessionScreenFxStrength * 0.04;
+
   return (
     <div className="w-full h-screen relative bg-[#88E1EB]">
+      {isSessionScreenFxActive ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{
+            opacity: cornerOverlayOpacity,
+            background: `
+              radial-gradient(circle at 0% 0%, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 24%),
+              radial-gradient(circle at 100% 0%, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 24%),
+              radial-gradient(circle at 0% 100%, rgba(219, 143, 143, 0.45) 0%, rgba(219, 143, 143, 0) 17%),
+              radial-gradient(circle at 100% 100%, rgba(219, 143, 143, 0.45) 0%, rgba(219, 143, 143, 0) 17%),
+              linear-gradient(90deg, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 16%),
+              linear-gradient(270deg, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 16%)
+            `,
+            filter: "blur(6px)",
+          }}
+        />
+      ) : null}
       <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
         <div className="flex items-center gap-2 text-black">
           <img src={heartIcon} alt="Heartbeat icon" className="h-10 w-10" />
@@ -417,6 +521,16 @@ function Home() {
             rootsFillProgress={rootsFillProgress}
           />
         </Suspense>
+        {isSessionScreenFxActive ? (
+          <EffectComposer>
+            <Vignette
+              eskil={false}
+              offset={Math.max(0, vignetteOffset)}
+              darkness={Math.min(1.5, vignetteDarkness)}
+              blendFunction={BlendFunction.NORMAL}
+            />
+          </EffectComposer>
+        ) : null}
       </Canvas>
     </div>
   );
