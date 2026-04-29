@@ -47,7 +47,8 @@ export function SessionScreenFxPostprocess({
   isActive,
   strength,
 }: SessionScreenFxProps) {
-  const { vignetteDarkness, vignetteOffset } = getSessionScreenFxVisuals(strength);
+  const { vignetteDarkness, vignetteOffset } =
+    getSessionScreenFxVisuals(strength);
 
   return (
     <EffectComposer>
