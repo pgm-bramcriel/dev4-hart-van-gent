@@ -25,6 +25,7 @@ const SESSION_RUSTLE_STEP = 0.08;
 const SESSION_RUSTLE_INTERVAL_MS = 1000;
 const RUSTLE_COOLDOWN_STEP = 0.035;
 const RUSTLE_COOLDOWN_INTERVAL_MS = 140;
+const ROOTS_FILL_TO_FULL_DURATION_MS = 3000;
 
 function startHeartbeatCountdown(
   startValue: number,
@@ -98,6 +99,7 @@ function Home() {
   const [heartValue, setHeartValue] = useState(0);
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [leafRustleIntensity, setLeafRustleIntensity] = useState(0);
+  const [rootsFillProgress, setRootsFillProgress] = useState(0);
   const pendingSessionAverageRef = useRef<number | null>(null);
   const mainLocationRef = useRef<LocationRow | null>(null);
   const heartValueRef = useRef(0);
@@ -105,6 +107,8 @@ function Home() {
   const rustleCooldownIntervalRef = useRef<number | null>(null);
   const cancelHeartCountdownRef = useRef<(() => void) | null>(null);
   const cancelTreeGrowthRef = useRef<(() => void) | null>(null);
+  const rootsFillAnimationFrameRef = useRef<number | null>(null);
+  const rootsFillAnimationRunIdRef = useRef(0);
   const configuredMainLocationName = (
     import.meta.env.VITE_MAIN_LOCATION ??
     import.meta.env.MAIN_LOCATION ??
@@ -160,6 +164,55 @@ function Home() {
       }
     }
 
+    function stopRootsFillAnimation(reset = true) {
+      rootsFillAnimationRunIdRef.current += 1;
+
+      if (rootsFillAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(rootsFillAnimationFrameRef.current);
+        rootsFillAnimationFrameRef.current = null;
+      }
+
+      if (reset) {
+        setRootsFillProgress(0);
+      }
+    }
+
+    function animateRootsFillToFull(durationMs: number) {
+      const runId = rootsFillAnimationRunIdRef.current + 1;
+      rootsFillAnimationRunIdRef.current = runId;
+
+      if (rootsFillAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(rootsFillAnimationFrameRef.current);
+        rootsFillAnimationFrameRef.current = null;
+      }
+
+      return new Promise<boolean>((resolve) => {
+        const startedAt = performance.now();
+
+        const animate = (now: number) => {
+          if (rootsFillAnimationRunIdRef.current !== runId) {
+            resolve(false);
+            return;
+          }
+
+          const progress = Math.min((now - startedAt) / durationMs, 1);
+          setRootsFillProgress(progress);
+
+          if (progress >= 1) {
+            rootsFillAnimationFrameRef.current = null;
+            resolve(true);
+            return;
+          }
+
+          rootsFillAnimationFrameRef.current =
+            window.requestAnimationFrame(animate);
+        };
+
+        rootsFillAnimationFrameRef.current =
+          window.requestAnimationFrame(animate);
+      });
+    }
+
     function startSessionRustleRamp() {
       stopSessionRustleRamp();
       stopRustleCooldown();
@@ -179,7 +232,10 @@ function Home() {
       stopRustleCooldown();
       rustleCooldownIntervalRef.current = window.setInterval(() => {
         setLeafRustleIntensity((previousIntensity) => {
-          const nextIntensity = Math.max(0, previousIntensity - RUSTLE_COOLDOWN_STEP);
+          const nextIntensity = Math.max(
+            0,
+            previousIntensity - RUSTLE_COOLDOWN_STEP,
+          );
           if (nextIntensity <= 0) {
             stopRustleCooldown();
           }
@@ -246,6 +302,7 @@ function Home() {
       if (error) {
         console.error("Error saving grown tree height:", error);
       }
+      setRootsFillProgress(0);
 
       return true;
     }
@@ -269,6 +326,7 @@ function Home() {
       if (message.type === "heartbeat-session-start") {
         stopRunningAnimations();
         startSessionRustleRamp();
+        stopRootsFillAnimation(true);
         pendingSessionAverageRef.current = null;
         return;
       }
@@ -282,8 +340,15 @@ function Home() {
         stopSessionRustleRamp();
         stopRustleCooldown();
         setLeafRustleIntensity(SESSION_RUSTLE_MAX_INTENSITY);
+        const didFinishRootsFill = await animateRootsFillToFull(
+          ROOTS_FILL_TO_FULL_DURATION_MS,
+        );
+        if (!didFinishRootsFill) {
+          return;
+        }
         const didStartGrowth = await handleSessionEnd();
         if (!didStartGrowth) {
+          stopRootsFillAnimation(true);
           startRustleCooldown();
         }
         pendingSessionAverageRef.current = null;
@@ -302,6 +367,7 @@ function Home() {
       stopRunningAnimations();
       stopSessionRustleRamp();
       stopRustleCooldown();
+      stopRootsFillAnimation(true);
       socket.close();
     };
   }, []);
@@ -348,6 +414,7 @@ function Home() {
             mainLocationHeightCm={mainLocation?.height ?? null}
             secondaryLocationHeightCm={secondaryLocation?.height ?? null}
             leafRustleIntensity={leafRustleIntensity}
+            rootsFillProgress={rootsFillProgress}
           />
         </Suspense>
       </Canvas>

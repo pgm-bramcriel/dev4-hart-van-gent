@@ -14,6 +14,7 @@ type MainSceneProps = {
   mainLocationHeightCm: number | null;
   secondaryLocationHeightCm: number | null;
   leafRustleIntensity: number;
+  rootsFillProgress: number;
 };
 
 type TreeVariant = "sapling" | "main" | "large";
@@ -90,6 +91,7 @@ const MainScene = ({
   mainLocationHeightCm,
   secondaryLocationHeightCm,
   leafRustleIntensity,
+  rootsFillProgress,
 }: MainSceneProps) => {
   const mainTreeVariant = getTreeVariant(mainLocationHeightCm);
   const secondaryTreeVariant = getTreeVariant(secondaryLocationHeightCm);
@@ -138,7 +140,7 @@ const MainScene = ({
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
 
-      <MainTreeRoots2D />
+      <MainTreeRoots2D fillProgress={rootsFillProgress} />
 
       <MainLocationTree
         position={MAIN_TREE_POSITION}
