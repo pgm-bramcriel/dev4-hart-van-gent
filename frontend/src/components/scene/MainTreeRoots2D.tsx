@@ -2,7 +2,7 @@ import { useTexture } from "@react-three/drei";
 import { useEffect, useRef } from "react";
 import { Color, MathUtils } from "three";
 
-const ROOTS_TEXTURE_PATH = "/images/roots_svg.svg";
+const ROOTS_TEXTURE_PATH = "/images/roots_v3.svg";
 const ROOTS_FILL_START_COLOR = new Color("#F5B041");
 const ROOTS_FILL_END_COLOR = new Color("#FFC300");
 
@@ -27,8 +27,8 @@ export function MainTreeRoots2D({ fillProgress }: MainTreeRoots2DProps) {
 
   return (
     <mesh
-      position={[0.028, -2.25, -1]}
-      scale={1.08}
+      position={[-0.172, -2.29, -1]}
+      scale={1.12}
       renderOrder={8}
       frustumCulled={false}
     >
