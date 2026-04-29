@@ -47,18 +47,14 @@ export function SessionScreenFxPostprocess({
   isActive,
   strength,
 }: SessionScreenFxProps) {
-  if (!isActive) {
-    return null;
-  }
-
   const { vignetteDarkness, vignetteOffset } = getSessionScreenFxVisuals(strength);
 
   return (
     <EffectComposer>
       <Vignette
         eskil={false}
-        offset={Math.max(0, vignetteOffset)}
-        darkness={Math.min(1.5, vignetteDarkness)}
+        offset={isActive ? Math.max(0, vignetteOffset) : 1}
+        darkness={isActive ? Math.min(1.5, vignetteDarkness) : 0}
         blendFunction={BlendFunction.NORMAL}
       />
     </EffectComposer>
