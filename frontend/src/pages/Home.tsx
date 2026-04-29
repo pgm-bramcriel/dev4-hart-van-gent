@@ -1,9 +1,11 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { EffectComposer, Vignette } from "@react-three/postprocessing";
 import MainScene from "@/components/MainScene";
 import heartIcon from "@/assets/heart_icon.svg";
-import { BlendFunction } from "postprocessing";
+import {
+  SessionScreenFxOverlay,
+  SessionScreenFxPostprocess,
+} from "@/components/scene/SessionScreenFx";
 import { supabase } from "@/utils/supabase";
 import { parseHeartbeatWsMessage } from "@/utils/heartbeatMessages";
 import {
@@ -31,7 +33,7 @@ const ROOTS_FILL_TO_FULL_DURATION_MS = 3000;
 const SESSION_SCREEN_FX_RAMP_DURATION_MS = 9000;
 const SESSION_SCREEN_FX_TICK_MS = 80;
 const SESSION_SCREEN_FX_PULSE_PERIOD_MS = 1000;
-const SESSION_SCREEN_FX_FADE_OUT_MS = 650;
+const SESSION_SCREEN_FX_FADE_OUT_MS = 1200;
 
 function startHeartbeatCountdown(
   startValue: number,
@@ -120,6 +122,7 @@ function Home() {
   const sessionScreenFxIntervalRef = useRef<number | null>(null);
   const sessionScreenFxStartedAtRef = useRef(0);
   const sessionScreenFxFadeFrameRef = useRef<number | null>(null);
+  const sessionScreenFxStrengthRef = useRef(0);
   const configuredMainLocationName = (
     import.meta.env.VITE_MAIN_LOCATION ??
     import.meta.env.MAIN_LOCATION ??
@@ -144,6 +147,10 @@ function Home() {
   useEffect(() => {
     heartValueRef.current = heartValue;
   }, [heartValue]);
+
+  useEffect(() => {
+    sessionScreenFxStrengthRef.current = sessionScreenFxStrength;
+  }, [sessionScreenFxStrength]);
 
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3002";
@@ -205,7 +212,7 @@ function Home() {
         return;
       }
 
-      const initialStrength = sessionScreenFxStrength;
+      const initialStrength = sessionScreenFxStrengthRef.current;
       const startedAt = performance.now();
 
       const animateFadeOut = (now: number) => {
@@ -213,7 +220,8 @@ function Home() {
           (now - startedAt) / SESSION_SCREEN_FX_FADE_OUT_MS,
           1,
         );
-        const nextStrength = initialStrength * (1 - progress);
+        const easedProgress = 1 - Math.pow(1 - progress, 2);
+        const nextStrength = initialStrength * (1 - easedProgress);
         setSessionScreenFxStrength(nextStrength);
 
         if (progress >= 1) {
@@ -473,29 +481,12 @@ function Home() {
     getLocations();
   }, []);
 
-  const cornerOverlayOpacity = Math.min(0.82, sessionScreenFxStrength * 0.58);
-  const vignetteDarkness = 0.1 + sessionScreenFxStrength * 0.24;
-  const vignetteOffset = 0.72 - sessionScreenFxStrength * 0.04;
-
   return (
     <div className="w-full h-screen relative bg-[#88E1EB]">
-      {isSessionScreenFxActive ? (
-        <div
-          className="pointer-events-none absolute inset-0 z-10"
-          style={{
-            opacity: cornerOverlayOpacity,
-            background: `
-              radial-gradient(circle at 0% 0%, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 24%),
-              radial-gradient(circle at 100% 0%, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 24%),
-              radial-gradient(circle at 0% 100%, rgba(219, 143, 143, 0.45) 0%, rgba(219, 143, 143, 0) 17%),
-              radial-gradient(circle at 100% 100%, rgba(219, 143, 143, 0.45) 0%, rgba(219, 143, 143, 0) 17%),
-              linear-gradient(90deg, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 16%),
-              linear-gradient(270deg, rgba(219, 143, 143, 1) 0%, rgba(219, 143, 143, 0) 16%)
-            `,
-            filter: "blur(6px)",
-          }}
-        />
-      ) : null}
+      <SessionScreenFxOverlay
+        isActive={isSessionScreenFxActive}
+        strength={sessionScreenFxStrength}
+      />
       <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
         <div className="flex items-center gap-2 text-black">
           <img src={heartIcon} alt="Heartbeat icon" className="h-10 w-10" />
@@ -521,16 +512,10 @@ function Home() {
             rootsFillProgress={rootsFillProgress}
           />
         </Suspense>
-        {isSessionScreenFxActive ? (
-          <EffectComposer>
-            <Vignette
-              eskil={false}
-              offset={Math.max(0, vignetteOffset)}
-              darkness={Math.min(1.5, vignetteDarkness)}
-              blendFunction={BlendFunction.NORMAL}
-            />
-          </EffectComposer>
-        ) : null}
+        <SessionScreenFxPostprocess
+          isActive={isSessionScreenFxActive}
+          strength={sessionScreenFxStrength}
+        />
       </Canvas>
     </div>
   );
