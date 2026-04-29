@@ -1,6 +1,7 @@
 import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
+import { MainTreeRoots2D } from "./scene/MainTreeRoots2D";
 import { MainTree } from "./models/MainTree";
 import { TreeLarge } from "./models/TreeLarge";
 import { TreeSapling } from "./models/TreeSapling";
@@ -136,6 +137,8 @@ const MainScene = ({
         <sphereGeometry args={[1, 48, 48]} />
         <meshBasicMaterial color="#46AA4A" />
       </mesh>
+
+      <MainTreeRoots2D />
 
       <MainLocationTree
         position={MAIN_TREE_POSITION}
