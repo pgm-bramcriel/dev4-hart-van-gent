@@ -2,6 +2,12 @@ import type { ThreeElements } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { Mesh, MeshStandardMaterial } from "three";
 import type { GLTF } from "three-stdlib";
+import { useLeafRustleAnimation } from "@/components/scene/useLeafRustleAnimation";
+
+const TREE_BASE_POSITION: [number, number, number] = [-34.834, 0, 162.088];
+const TREE_OFFSET_FROM_BASE: [number, number, number] = [
+  34.834, 0, -162.088,
+];
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -53,12 +59,23 @@ type GLTFResult = GLTF & {
   };
 };
 
-type TreeProps = ThreeElements["group"];
+type TreeProps = ThreeElements["group"] & {
+  rustleIntensity?: number;
+  growthScale?: number;
+};
 
-export function TreeScene(props: TreeProps) {
+export function TreeScene({
+  rustleIntensity = 0,
+  growthScale = 1,
+  ...props
+}: TreeProps) {
   const { nodes, materials } = useGLTF(
     "/models/tree_scene_v2.glb",
   ) as unknown as GLTFResult;
+  const leavesGroupRef = useLeafRustleAnimation({
+    intensity: rustleIntensity,
+    phaseOffset: 2.8,
+  });
 
   return (
     <group {...props} dispose={null}>
@@ -70,14 +87,17 @@ export function TreeScene(props: TreeProps) {
         position={[38.064, 1.754, 160.285]}
         scale={[73.575, 0.219, 66.75]}
       />
+      <group position={TREE_BASE_POSITION} scale={growthScale}>
       <mesh
         castShadow
         receiveShadow
         geometry={nodes.Trunk001.geometry}
         material={materials["Trunk.009"]}
-        position={[-34.834, 3.054, 162.088]}
+        position={[0, 3.054, 0]}
         scale={1.286}
       />
+      <group ref={leavesGroupRef}>
+        <group position={TREE_OFFSET_FROM_BASE}>
       <mesh
         castShadow
         receiveShadow
@@ -282,6 +302,9 @@ export function TreeScene(props: TreeProps) {
         position={[-34.834, 19.577, 162.088]}
         scale={1.505}
       />
+        </group>
+      </group>
+      </group>
       <mesh
         castShadow
         receiveShadow

@@ -1,5 +1,6 @@
 import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
+import { useGrowAnimation } from "./scene/GrowAnimation";
 import { TreeScene } from "./models/TreeScene";
 
 type MainSceneProps = {
@@ -19,7 +20,18 @@ const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 const MainScene = ({
   mainLocationName,
   mainLocationHeightLabel,
+  mainLocationHeightCm,
+  leafRustleIntensity,
 }: MainSceneProps) => {
+  const { treeGrowthScale } = useGrowAnimation({
+    mainLocationHeightCm,
+  });
+  const labelPosition: [number, number, number] = [
+    MAIN_TREE_LABEL_POSITION[0],
+    MAIN_TREE_LABEL_POSITION[1] * treeGrowthScale,
+    MAIN_TREE_LABEL_POSITION[2],
+  ];
+
   return (
     <>
       <OrbitControls
@@ -29,9 +41,13 @@ const MainScene = ({
         enableRotate={false}
       />
       <Lights />
-      <TreeScene position={TREE_SCENE_POSITION} />
+      <TreeScene
+        position={TREE_SCENE_POSITION}
+        growthScale={treeGrowthScale}
+        rustleIntensity={leafRustleIntensity}
+      />
       <Html
-        position={MAIN_TREE_LABEL_POSITION}
+        position={labelPosition}
         transform
         sprite
         center
