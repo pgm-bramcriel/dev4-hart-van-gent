@@ -22,6 +22,7 @@ const MainScene = ({
   mainLocationHeightLabel,
   mainLocationHeightCm,
   leafRustleIntensity,
+  rootsFillProgress,
 }: MainSceneProps) => {
   const { treeGrowthScale } = useGrowAnimation({
     mainLocationHeightCm,
@@ -45,6 +46,7 @@ const MainScene = ({
         position={TREE_SCENE_POSITION}
         growthScale={treeGrowthScale}
         rustleIntensity={leafRustleIntensity}
+        rootsFillProgress={rootsFillProgress}
       />
       <Html
         position={labelPosition}
