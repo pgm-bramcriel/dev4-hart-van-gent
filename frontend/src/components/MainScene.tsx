@@ -1,6 +1,5 @@
 import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
-import { useGrowAnimation } from "./scene/GrowAnimation";
 import { TreeScene } from "./models/TreeScene";
 
 type MainSceneProps = {
@@ -14,51 +13,25 @@ type MainSceneProps = {
   rootsFillProgress: number;
 };
 
-const MAIN_TREE_LABEL_POSITION: [number, number, number] = [
-  -34.764, 25.2, -5.384,
-];
-const TREE_SCENE_TREE_BASE_POSITION: [number, number, number] = [
-  -34.764, 0, -5.384,
-];
-
-function getScaledTreePosition(
-  position: [number, number, number],
-  scale: number,
-): [number, number, number] {
-  return [
-    TREE_SCENE_TREE_BASE_POSITION[0] +
-      (position[0] - TREE_SCENE_TREE_BASE_POSITION[0]) * scale,
-    TREE_SCENE_TREE_BASE_POSITION[1] +
-      (position[1] - TREE_SCENE_TREE_BASE_POSITION[1]) * scale,
-    TREE_SCENE_TREE_BASE_POSITION[2] +
-      (position[2] - TREE_SCENE_TREE_BASE_POSITION[2]) * scale,
-  ];
-}
+const MAIN_TREE_LABEL_POSITION: [number, number, number] = [0, 25.2, 0];
+const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 
 const MainScene = ({
   mainLocationName,
   mainLocationHeightLabel,
-  mainLocationHeightCm,
-  leafRustleIntensity,
 }: MainSceneProps) => {
-  const { treeGrowthScale } = useGrowAnimation({
-    mainLocationHeightCm,
-  });
-  const labelPosition = getScaledTreePosition(
-    MAIN_TREE_LABEL_POSITION,
-    treeGrowthScale,
-  );
-
   return (
     <>
-      <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
-      <Lights />
-      <TreeScene
-        rustleIntensity={leafRustleIntensity}
-        growthScale={treeGrowthScale}
+      <OrbitControls
+        target={[2.8189748722161325, 15.782626546927926, -0.37117111828601307]}
+        enableZoom={false}
+        enablePan={false}
+        enableRotate={false}
       />
+      <Lights />
+      <TreeScene position={TREE_SCENE_POSITION} />
       <Html
-        position={labelPosition}
+        position={MAIN_TREE_LABEL_POSITION}
         transform
         sprite
         center

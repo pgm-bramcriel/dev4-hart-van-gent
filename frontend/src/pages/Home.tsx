@@ -18,7 +18,7 @@ import {
 const cameraSettings = {
   fov: 45,
   far: 400,
-  position: [0, 0, 5],
+  position: [-39.39659597413785, 6.051916582981534, 1.7223501825792262],
 };
 
 const HEART_COUNTDOWN_INTERVAL_MS = 30;
@@ -247,13 +247,16 @@ function Home() {
       setSessionScreenFxStrength(0.18);
 
       sessionScreenFxIntervalRef.current = window.setInterval(() => {
-        const elapsedMs = performance.now() - sessionScreenFxStartedAtRef.current;
+        const elapsedMs =
+          performance.now() - sessionScreenFxStartedAtRef.current;
         const rampProgress = Math.min(
           elapsedMs / SESSION_SCREEN_FX_RAMP_DURATION_MS,
           1,
         );
         const pulse =
-          (Math.sin((elapsedMs / SESSION_SCREEN_FX_PULSE_PERIOD_MS) * Math.PI * 2) +
+          (Math.sin(
+            (elapsedMs / SESSION_SCREEN_FX_PULSE_PERIOD_MS) * Math.PI * 2,
+          ) +
             1) /
           2;
         const subtleToIntense = 0.35 + rampProgress * 0.85;
