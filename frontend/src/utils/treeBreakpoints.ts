@@ -7,10 +7,7 @@ type VariantBreakpoint = {
   variant: TreeVariant;
 };
 
-export const TREE_VARIANT_BREAKPOINTS: Record<
-  TreeRole,
-  VariantBreakpoint[]
-> = {
+export const TREE_VARIANT_BREAKPOINTS: Record<TreeRole, VariantBreakpoint[]> = {
   main: [
     { maxHeightMeters: 3, variant: "small" },
     { maxHeightMeters: 6, variant: "medium" },
@@ -29,7 +26,7 @@ export const TREE_STAGE_BREAKPOINTS: Record<
 > = {
   small: { stage2At: 0.5, stage3At: 0.85 },
   medium: { stage2At: 0.5, stage3At: 0.85 },
-  large: { stage2At: 0.5, stage3At: 0.85 },
+  large: { stage2At: 0.4, stage3At: 0.7 },
 };
 
 function getHeightMeters(heightCm: number | null) {
