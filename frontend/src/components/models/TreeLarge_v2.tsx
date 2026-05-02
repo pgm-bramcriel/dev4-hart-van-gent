@@ -6,20 +6,39 @@ import type { ThreeElements } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import type { Mesh, MeshStandardMaterial } from "three";
+import { useLeafRustleAnimation } from "@/components/scene/useLeafRustleAnimation";
 
 const TREE_LARGE_V2_MODEL_PATH = "/models/tree_large_v2.glb";
+const TREE_BASE_POSITION: [number, number, number] = [-34.834, 0, 162.088];
+const TREE_OFFSET_FROM_BASE: [number, number, number] = [34.834, 0, -162.088];
 
 type GLTFResult = GLTF & {
   nodes: Record<string, Mesh>;
   materials: Record<string, MeshStandardMaterial>;
 };
 
-export function TreeLargeV2(props: ThreeElements["group"]) {
+type TreeLargeV2Props = ThreeElements["group"] & {
+  growthScale?: number;
+  rustleIntensity?: number;
+};
+
+export function TreeLargeV2({
+  growthScale = 1,
+  rustleIntensity = 0,
+  ...props
+}: TreeLargeV2Props) {
   const { nodes, materials } = useGLTF(
     TREE_LARGE_V2_MODEL_PATH,
   ) as unknown as GLTFResult;
+  const leavesGroupRef = useLeafRustleAnimation({
+    intensity: rustleIntensity,
+    phaseOffset: 2.8,
+  });
+
   return (
     <group {...props} dispose={null}>
+      <group position={TREE_BASE_POSITION} scale={growthScale}>
+        <group position={TREE_OFFSET_FROM_BASE}>
       <mesh
         castShadow
         receiveShadow
@@ -92,6 +111,9 @@ export function TreeLargeV2(props: ThreeElements["group"]) {
         position={[-34.834, 3.054, 162.088]}
         scale={1.286}
       />
+        </group>
+        <group ref={leavesGroupRef}>
+          <group position={TREE_OFFSET_FROM_BASE}>
       <mesh
         castShadow
         receiveShadow
@@ -296,6 +318,9 @@ export function TreeLargeV2(props: ThreeElements["group"]) {
         position={[-34.834, 19.577, 162.088]}
         scale={1.505}
       />
+          </group>
+        </group>
+        <group position={TREE_OFFSET_FROM_BASE}>
       <mesh
         castShadow
         receiveShadow
@@ -499,6 +524,8 @@ export function TreeLargeV2(props: ThreeElements["group"]) {
         rotation={[0.489, 0, -Math.PI]}
         scale={[-0.351, -0.237, -0.324]}
       />
+        </group>
+      </group>
     </group>
   );
 }

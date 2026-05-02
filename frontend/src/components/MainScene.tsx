@@ -75,6 +75,7 @@ const MainScene = ({
   secondaryLocationHeightLabel,
   mainLocationHeightCm,
   secondaryLocationHeightCm,
+  leafRustleIntensity,
 }: MainSceneProps) => {
   const { treeGrowthScale } = useGrowAnimation({
     mainLocationHeightCm,
@@ -105,7 +106,11 @@ const MainScene = ({
       <Lights />
       <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
       <ParkScene position={TREE_SCENE_POSITION} />
-      <TreeLargeV2 position={mainTreePosition} />
+      <TreeLargeV2
+        position={mainTreePosition}
+        growthScale={treeGrowthScale}
+        rustleIntensity={leafRustleIntensity}
+      />
       <Html
         position={secondaryLabelPosition}
         transform
