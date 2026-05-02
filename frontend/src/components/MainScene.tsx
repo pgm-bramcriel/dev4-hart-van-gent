@@ -5,6 +5,12 @@ import { ParkScene } from "./models/ParkScene";
 import { TreeSmall } from "./models/TreeSmall";
 import { TreeMedium } from "./models/TreeMedium";
 import { TreeLarge } from "./models/TreeLarge";
+import {
+  getTreeStage,
+  getTreeVariant,
+  type TreeStage,
+  type TreeVariant,
+} from "@/utils/treeBreakpoints";
 
 type MainSceneProps = {
   mainLocationName: string;
@@ -23,11 +29,8 @@ const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -18];
 const SECONDARY_TREE_SCALE = 0.45;
 const SCENE_FOG_COLOR = "#88e1eb";
 
-type MainTreeVariant = "small" | "medium" | "large";
-type SecondaryTreeVariant = "sapling" | "medium" | "large";
-
 const MAIN_TREE_VARIANT_OFFSETS: Record<
-  MainTreeVariant,
+  TreeVariant,
   [number, number, number]
 > = {
   small: [0, 0, -149.487],
@@ -35,50 +38,20 @@ const MAIN_TREE_VARIANT_OFFSETS: Record<
   large: [0, 0, 0],
 };
 
-const MAIN_TREE_LABEL_HEIGHT: Record<MainTreeVariant, number> = {
+const MAIN_TREE_LABEL_HEIGHT: Record<TreeVariant, number> = {
   small: 15,
   medium: 20,
   large: 25.2,
 };
 
-const SECONDARY_TREE_LABEL_HEIGHT: Record<SecondaryTreeVariant, number> = {
-  sapling: 20,
+const SECONDARY_TREE_LABEL_HEIGHT: Record<TreeVariant, number> = {
+  small: 20,
   medium: 25.2,
   large: 30.5,
 };
 
-function getSecondaryTreeVariant(
-  heightCm: number | null,
-): SecondaryTreeVariant {
-  const heightMeters = (heightCm ?? 0) / 100;
-
-  if (heightMeters < 2) {
-    return "sapling";
-  }
-
-  if (heightMeters < 5) {
-    return "medium";
-  }
-
-  return "large";
-}
-
-function getMainTreeVariant(heightCm: number | null): MainTreeVariant {
-  const heightMeters = (heightCm ?? 0) / 100;
-
-  if (heightMeters < 3) {
-    return "small";
-  }
-
-  if (heightMeters < 6) {
-    return "medium";
-  }
-
-  return "large";
-}
-
 function getMainTreePosition(
-  variant: MainTreeVariant,
+  variant: TreeVariant,
   offsetOverride?: [number, number, number],
 ): [number, number, number] {
   const offset = offsetOverride ?? MAIN_TREE_VARIANT_OFFSETS[variant];
@@ -92,7 +65,7 @@ function getMainTreePosition(
 
 function getAnchoredTreePosition(
   anchorPosition: [number, number, number],
-  variant: MainTreeVariant,
+  variant: TreeVariant,
   scale = 1,
 ): [number, number, number] {
   const modelOffset = getMainTreePosition(variant);
@@ -104,16 +77,6 @@ function getAnchoredTreePosition(
   ];
 }
 
-function getSecondaryMainTreeVariant(
-  variant: SecondaryTreeVariant,
-): MainTreeVariant {
-  if (variant === "sapling") {
-    return "small";
-  }
-
-  return variant;
-}
-
 type MainTreeModelProps = {
   growthScale: number;
   hideRoots?: boolean;
@@ -121,7 +84,8 @@ type MainTreeModelProps = {
   rootsFillProgress: number;
   rustleIntensity: number;
   scale?: number;
-  variant: MainTreeVariant;
+  treeStage: TreeStage;
+  variant: TreeVariant;
 };
 
 function MainTreeModel({
@@ -131,6 +95,7 @@ function MainTreeModel({
   rootsFillProgress,
   rustleIntensity,
   scale,
+  treeStage,
   variant,
 }: MainTreeModelProps) {
   const treeProps = {
@@ -140,6 +105,7 @@ function MainTreeModel({
     rootsFillProgress,
     rustleIntensity,
     scale,
+    treeStage,
   };
 
   if (variant === "small") {
@@ -166,12 +132,21 @@ const MainScene = ({
   const { treeGrowthScale } = useGrowAnimation({
     mainLocationHeightCm,
   });
-  const secondaryTreeVariant = getSecondaryTreeVariant(
+  const secondaryTreeVariant = getTreeVariant(
     secondaryLocationHeightCm,
+    "secondary",
   );
-  const secondaryMainTreeVariant =
-    getSecondaryMainTreeVariant(secondaryTreeVariant);
-  const mainTreeVariant = getMainTreeVariant(mainLocationHeightCm);
+  const mainTreeVariant = getTreeVariant(mainLocationHeightCm, "main");
+  const mainTreeStage = getTreeStage(
+    mainLocationHeightCm,
+    "main",
+    mainTreeVariant,
+  );
+  const secondaryTreeStage = getTreeStage(
+    secondaryLocationHeightCm,
+    "secondary",
+    secondaryTreeVariant,
+  );
   const labelPosition: [number, number, number] = [
     0,
     MAIN_TREE_LABEL_HEIGHT[mainTreeVariant] * treeGrowthScale,
@@ -185,7 +160,7 @@ const MainScene = ({
   const mainTreePosition = getAnchoredTreePosition([0, 0, 0], mainTreeVariant);
   const secondaryTreePosition = getAnchoredTreePosition(
     SECONDARY_TREE_POSITION,
-    secondaryMainTreeVariant,
+    secondaryTreeVariant,
     SECONDARY_TREE_SCALE,
   );
 
@@ -203,6 +178,7 @@ const MainScene = ({
       <MainTreeModel
         position={mainTreePosition}
         variant={mainTreeVariant}
+        treeStage={mainTreeStage}
         growthScale={treeGrowthScale}
         rootsFillProgress={rootsFillProgress}
         rustleIntensity={leafRustleIntensity}
@@ -211,7 +187,8 @@ const MainScene = ({
         hideRoots
         position={secondaryTreePosition}
         scale={SECONDARY_TREE_SCALE}
-        variant={secondaryMainTreeVariant}
+        variant={secondaryTreeVariant}
+        treeStage={secondaryTreeStage}
         growthScale={1}
         rootsFillProgress={0}
         rustleIntensity={0}

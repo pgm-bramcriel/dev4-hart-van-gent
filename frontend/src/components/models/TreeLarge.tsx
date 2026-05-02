@@ -5,6 +5,7 @@ import { Color, MathUtils, Vector3 } from "three";
 import type { GLTF } from "three-stdlib";
 import type { Mesh, MeshStandardMaterial } from "three";
 import { useLeafRustleAnimation } from "@/components/scene/useLeafRustleAnimation";
+import type { TreeStage } from "@/utils/treeBreakpoints";
 
 const TREE_LARGE_MODEL_PATH = "/models/tree_large.glb";
 const TREE_BASE_POSITION: [number, number, number] = [-34.834, 0, 162.088];
@@ -23,6 +24,7 @@ type TreeLargeProps = ThreeElements["group"] & {
   hideRoots?: boolean;
   rustleIntensity?: number;
   rootsFillProgress?: number;
+  treeStage?: TreeStage;
 };
 
 type RootFillShader = {
@@ -335,6 +337,7 @@ export function TreeLarge({
   hideRoots = false,
   rootsFillProgress = 0,
   rustleIntensity = 0,
+  treeStage = 3,
   ...props
 }: TreeLargeProps) {
   const { nodes, materials } = useGLTF(
@@ -364,6 +367,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -372,6 +376,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -380,6 +385,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -388,6 +394,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -396,6 +403,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -404,6 +412,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -412,6 +421,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 1}
           />
           <mesh
             castShadow
@@ -420,6 +430,7 @@ export function TreeLarge({
             material={materials["Trunk.009"]}
             position={[-34.834, 3.054, 162.088]}
             scale={1.286}
+            visible={treeStage >= 3}
           />
         </group>
         <group ref={leavesGroupRef}>
@@ -432,6 +443,7 @@ export function TreeLarge({
               position={[-36.653, 16.552, 159.053]}
               rotation={[1.355, -1.315, 1.419]}
               scale={[0.274, 0.372, 0.274]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -441,6 +453,7 @@ export function TreeLarge({
               position={[-38.406, 16.049, 163.503]}
               rotation={[2.654, -0.412, -1.651]}
               scale={[0.786, 0.786, 0.485]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -450,6 +463,7 @@ export function TreeLarge({
               position={[-26.247, 13.064, 159.021]}
               rotation={[2.654, -0.412, -1.651]}
               scale={[0.786, 0.786, 0.485]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -459,6 +473,7 @@ export function TreeLarge({
               position={[-32.211, 10.648, 166.536]}
               rotation={[0.095, -0.12, 0.879]}
               scale={[0.614, 0.614, 0.379]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -468,6 +483,7 @@ export function TreeLarge({
               position={[-29.658, 10.956, 164.301]}
               rotation={[2.649, -0.873, 2.394]}
               scale={[0.539, 0.529, 0.399]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -477,6 +493,7 @@ export function TreeLarge({
               position={[-29.444, 11.802, 167.07]}
               rotation={[2.849, -0.336, -0.491]}
               scale={[0.792, 0.792, 0.489]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -486,6 +503,7 @@ export function TreeLarge({
               position={[-32.46, 16.633, 162.91]}
               rotation={[1.319, 1.097, -1.249]}
               scale={[0.614, 0.614, 0.379]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -495,6 +513,7 @@ export function TreeLarge({
               position={[-31.071, 17.033, 159.733]}
               rotation={[-1.049, -0.545, -0.581]}
               scale={[0.97, 0.97, 0.599]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -504,6 +523,7 @@ export function TreeLarge({
               position={[-34.161, 15.805, 157.961]}
               rotation={[1.355, -1.315, 1.419]}
               scale={[0.617, 0.839, 0.617]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -513,6 +533,7 @@ export function TreeLarge({
               position={[-39.599, 16.945, 159.372]}
               rotation={[0, 1.331, 0]}
               scale={[0.659, 0.659, 0.407]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -521,6 +542,7 @@ export function TreeLarge({
               material={materials["Leaves.024"]}
               position={[-38.942, 17.751, 161.518]}
               scale={[0.614, 0.614, 0.379]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -530,6 +552,7 @@ export function TreeLarge({
               position={[-39.25, 14.542, 158.816]}
               rotation={[-1.964, -0.988, -1.699]}
               scale={[0.754, 0.754, 0.466]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -539,6 +562,7 @@ export function TreeLarge({
               position={[-37.193, 16.96, 167.087]}
               rotation={[0.187, -0.473, -0.254]}
               scale={[0.906, 0.906, 0.559]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -548,6 +572,7 @@ export function TreeLarge({
               position={[-33.803, 12.717, 155.475]}
               rotation={[2.874, -1.419, -2.478]}
               scale={[1.13, 1.109, 0.837]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -557,6 +582,7 @@ export function TreeLarge({
               position={[-38.283, 13.053, 166.621]}
               rotation={[1.046, -0.507, 1.265]}
               scale={[1.078, 1.078, 0.666]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -566,6 +592,7 @@ export function TreeLarge({
               position={[-41.383, 11.608, 161.623]}
               rotation={[2.678, -0.693, 2.288]}
               scale={[1.314, 1.289, 0.972]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -575,6 +602,7 @@ export function TreeLarge({
               position={[-37.045, 14.665, 157.109]}
               rotation={[-0.361, -0.549, 0.671]}
               scale={[0.849, 0.833, 0.628]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -584,6 +612,7 @@ export function TreeLarge({
               position={[-33.452, 17.211, 165.969]}
               rotation={[Math.PI, -1.415, Math.PI]}
               scale={[0.606, 0.606, 0.374]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -593,6 +622,7 @@ export function TreeLarge({
               position={[-33.015, 14.389, 169.157]}
               rotation={[-2.657, -1.297, -Math.PI]}
               scale={[1.399, 1.372, 1.035]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -602,6 +632,7 @@ export function TreeLarge({
               position={[-29.446, 14.476, 156.818]}
               rotation={[0, -1.002, 0]}
               scale={[0.992, 1.349, 0.992]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -610,6 +641,7 @@ export function TreeLarge({
               material={materials["Leaves.027"]}
               position={[-26.623, 15.406, 162.437]}
               scale={[0.919, 0.919, 0.567]}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -619,6 +651,7 @@ export function TreeLarge({
               position={[-29.565, 14.714, 164.673]}
               rotation={[2.131, -1.297, -Math.PI]}
               scale={[1.229, 1.206, 0.91]}
+              visible={treeStage >= 3}
             />
             <mesh
               castShadow
@@ -627,6 +660,7 @@ export function TreeLarge({
               material={materials["Leaves.027"]}
               position={[-34.834, 19.577, 162.088]}
               scale={1.505}
+              visible={treeStage >= 3}
             />
           </group>
         </group>
