@@ -76,6 +76,7 @@ const MainScene = ({
   mainLocationHeightCm,
   secondaryLocationHeightCm,
   leafRustleIntensity,
+  rootsFillProgress,
 }: MainSceneProps) => {
   const { treeGrowthScale } = useGrowAnimation({
     mainLocationHeightCm,
@@ -109,6 +110,7 @@ const MainScene = ({
       <TreeLargeV2
         position={mainTreePosition}
         growthScale={treeGrowthScale}
+        rootsFillProgress={rootsFillProgress}
         rustleIntensity={leafRustleIntensity}
       />
       <Html
