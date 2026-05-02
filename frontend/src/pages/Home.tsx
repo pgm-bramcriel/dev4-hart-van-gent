@@ -100,7 +100,7 @@ function formatHeightInMeters(heightInCm: number | null) {
 
   const meters = heightInCm / 100;
   const compactValue = Number(meters.toFixed(2)).toString();
-  return `${compactValue} meter`;
+  return `${compactValue} meters`;
 }
 
 function Home() {
