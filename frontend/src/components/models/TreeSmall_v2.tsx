@@ -23,6 +23,7 @@ type GLTFResult = GLTF & {
 
 type TreeSmallV2Props = ThreeElements["group"] & {
   growthScale?: number;
+  hideRoots?: boolean;
   rootsFillProgress?: number;
   rustleIntensity?: number;
 };
@@ -46,6 +47,7 @@ const ROOT_MESHES: TreeRootMeshConfig[] = [
 
 export function TreeSmallV2({
   growthScale = 1,
+  hideRoots = false,
   rootsFillProgress = 0,
   rustleIntensity = 0,
   ...props
@@ -189,21 +191,23 @@ export function TreeSmallV2({
         scale={0.643}
       />
         </group>
-        <group position={TREE_OFFSET_FROM_BASE}>
-          {ROOT_MESHES.map((rootMesh) => (
-            <TreeRootFillMesh
-              key={rootMesh.node}
-              castShadow
-              receiveShadow
-              fillProgress={rootsFillProgress}
-              geometry={nodes[rootMesh.node].geometry}
-              material={materials[rootMesh.material]}
-              position={rootMesh.position}
-              rotation={rootMesh.rotation}
-              scale={rootMesh.scale}
-            />
-          ))}
-        </group>
+        {!hideRoots && (
+          <group position={TREE_OFFSET_FROM_BASE}>
+            {ROOT_MESHES.map((rootMesh) => (
+              <TreeRootFillMesh
+                key={rootMesh.node}
+                castShadow
+                receiveShadow
+                fillProgress={rootsFillProgress}
+                geometry={nodes[rootMesh.node].geometry}
+                material={materials[rootMesh.material]}
+                position={rootMesh.position}
+                rotation={rootMesh.rotation}
+                scale={rootMesh.scale}
+              />
+            ))}
+          </group>
+        )}
         <group position={TREE_OFFSET_FROM_BASE}>
       <mesh
         castShadow

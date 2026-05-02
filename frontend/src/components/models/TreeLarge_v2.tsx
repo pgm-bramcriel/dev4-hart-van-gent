@@ -20,6 +20,7 @@ type GLTFResult = GLTF & {
 
 type TreeLargeV2Props = ThreeElements["group"] & {
   growthScale?: number;
+  hideRoots?: boolean;
   rustleIntensity?: number;
   rootsFillProgress?: number;
 };
@@ -331,6 +332,7 @@ const ROOT_MESHES: RootMeshConfig[] = [
 
 export function TreeLargeV2({
   growthScale = 1,
+  hideRoots = false,
   rootsFillProgress = 0,
   rustleIntensity = 0,
   ...props
@@ -833,21 +835,23 @@ export function TreeLargeV2({
             scale={[-0.351, -0.237, -0.324]}
           />
         </group>
-        <group position={TREE_OFFSET_FROM_BASE}>
-          {ROOT_MESHES.map((rootMesh) => (
-            <RootFillMesh
-              key={rootMesh.node}
-              castShadow
-              receiveShadow
-              fillProgress={rootsFillProgress}
-              geometry={nodes[rootMesh.node].geometry}
-              material={materials[rootMesh.material]}
-              position={rootMesh.position}
-              rotation={rootMesh.rotation}
-              scale={rootMesh.scale}
-            />
-          ))}
-        </group>
+        {!hideRoots && (
+          <group position={TREE_OFFSET_FROM_BASE}>
+            {ROOT_MESHES.map((rootMesh) => (
+              <RootFillMesh
+                key={rootMesh.node}
+                castShadow
+                receiveShadow
+                fillProgress={rootsFillProgress}
+                geometry={nodes[rootMesh.node].geometry}
+                material={materials[rootMesh.material]}
+                position={rootMesh.position}
+                rotation={rootMesh.rotation}
+                scale={rootMesh.scale}
+              />
+            ))}
+          </group>
+        )}
       </group>
     </group>
   );

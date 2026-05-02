@@ -42,9 +42,9 @@ const MAIN_TREE_LABEL_HEIGHT: Record<MainTreeVariant, number> = {
 };
 
 const SECONDARY_TREE_LABEL_HEIGHT: Record<SecondaryTreeVariant, number> = {
-  sapling: 2.3,
-  medium: 9.2,
-  large: 27.7,
+  sapling: 20,
+  medium: 25.2,
+  large: 30.5,
 };
 
 function getSecondaryTreeVariant(
@@ -90,26 +90,56 @@ function getMainTreePosition(
   ];
 }
 
+function getAnchoredTreePosition(
+  anchorPosition: [number, number, number],
+  variant: MainTreeVariant,
+  scale = 1,
+): [number, number, number] {
+  const modelOffset = getMainTreePosition(variant);
+
+  return [
+    anchorPosition[0] + modelOffset[0] * scale,
+    anchorPosition[1] + modelOffset[1] * scale,
+    anchorPosition[2] + modelOffset[2] * scale,
+  ];
+}
+
+function getSecondaryMainTreeVariant(
+  variant: SecondaryTreeVariant,
+): MainTreeVariant {
+  if (variant === "sapling") {
+    return "small";
+  }
+
+  return variant;
+}
+
 type MainTreeV2Props = {
   growthScale: number;
+  hideRoots?: boolean;
   position: [number, number, number];
   rootsFillProgress: number;
   rustleIntensity: number;
+  scale?: number;
   variant: MainTreeVariant;
 };
 
 function MainTreeV2({
   growthScale,
+  hideRoots = false,
   position,
   rootsFillProgress,
   rustleIntensity,
+  scale,
   variant,
 }: MainTreeV2Props) {
   const treeProps = {
     position,
     growthScale,
+    hideRoots,
     rootsFillProgress,
     rustleIntensity,
+    scale,
   };
 
   if (variant === "small") {
@@ -139,6 +169,8 @@ const MainScene = ({
   const secondaryTreeVariant = getSecondaryTreeVariant(
     secondaryLocationHeightCm,
   );
+  const secondaryMainTreeVariant =
+    getSecondaryMainTreeVariant(secondaryTreeVariant);
   const mainTreeVariant = getMainTreeVariant(mainLocationHeightCm);
   const labelPosition: [number, number, number] = [
     0,
@@ -150,7 +182,12 @@ const MainScene = ({
     SECONDARY_TREE_LABEL_HEIGHT[secondaryTreeVariant] * SECONDARY_TREE_SCALE,
     SECONDARY_TREE_POSITION[2],
   ];
-  const mainTreePosition = getMainTreePosition(mainTreeVariant);
+  const mainTreePosition = getAnchoredTreePosition([0, 0, 0], mainTreeVariant);
+  const secondaryTreePosition = getAnchoredTreePosition(
+    SECONDARY_TREE_POSITION,
+    secondaryMainTreeVariant,
+    SECONDARY_TREE_SCALE,
+  );
 
   return (
     <>
@@ -169,6 +206,15 @@ const MainScene = ({
         growthScale={treeGrowthScale}
         rootsFillProgress={rootsFillProgress}
         rustleIntensity={leafRustleIntensity}
+      />
+      <MainTreeV2
+        hideRoots
+        position={secondaryTreePosition}
+        scale={SECONDARY_TREE_SCALE}
+        variant={secondaryMainTreeVariant}
+        growthScale={1}
+        rootsFillProgress={0}
+        rustleIntensity={0}
       />
       <Html
         position={secondaryLabelPosition}
