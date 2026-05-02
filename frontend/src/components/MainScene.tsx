@@ -29,14 +29,12 @@ const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -18];
 const SECONDARY_TREE_SCALE = 0.45;
 const SCENE_FOG_COLOR = "#88e1eb";
 
-const MAIN_TREE_VARIANT_OFFSETS: Record<
-  TreeVariant,
-  [number, number, number]
-> = {
-  small: [0, 0, -149.487],
-  medium: [0, 0, -304.702],
-  large: [0, 0, 0],
-};
+const MAIN_TREE_VARIANT_OFFSETS: Record<TreeVariant, [number, number, number]> =
+  {
+    small: [0, 0, -149.487],
+    medium: [0, 0, -304.702],
+    large: [0, 0, 0],
+  };
 
 const MAIN_TREE_LABEL_HEIGHT: Record<TreeVariant, number> = {
   small: 15,
@@ -167,10 +165,10 @@ const MainScene = ({
   return (
     <>
       <OrbitControls
-        target={[2.980861940630329, 14.538627488481774, -0.48901107383943215]}
-        enableZoom={false}
-        enablePan={false}
-        enableRotate={false}
+        target={[2.8622868061091964, 15.172575341047178, -0.5270746714055188]}
+        enableZoom={true}
+        enablePan={true}
+        enableRotate={true}
       />
       <Lights />
       <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
