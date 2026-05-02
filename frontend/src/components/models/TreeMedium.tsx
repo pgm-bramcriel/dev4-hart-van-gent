@@ -12,7 +12,7 @@ import {
   type TreeRootMeshConfig,
 } from "./TreeRootFillMesh";
 
-const TREE_MEDIUM_V2_MODEL_PATH = "/models/tree_medium_v2.glb";
+const TREE_MEDIUM_MODEL_PATH = "/models/tree_medium.glb";
 const TREE_BASE_POSITION: [number, number, number] = [-34.921, 0, 466.79];
 const TREE_OFFSET_FROM_BASE: [number, number, number] = [34.921, 0, -466.79];
 
@@ -21,7 +21,7 @@ type GLTFResult = GLTF & {
   materials: Record<string, MeshStandardMaterial>;
 };
 
-type TreeMediumV2Props = ThreeElements["group"] & {
+type TreeMediumProps = ThreeElements["group"] & {
   growthScale?: number;
   hideRoots?: boolean;
   rootsFillProgress?: number;
@@ -48,15 +48,15 @@ const ROOT_MESHES: TreeRootMeshConfig[] = [
   { node: "Cube079", material: "Material.068", position: [-35.347, -0.039, 464.438], scale: 0.935 },
 ];
 
-export function TreeMediumV2({
+export function TreeMedium({
   growthScale = 1,
   hideRoots = false,
   rootsFillProgress = 0,
   rustleIntensity = 0,
   ...props
-}: TreeMediumV2Props) {
+}: TreeMediumProps) {
   const { nodes, materials } = useGLTF(
-    TREE_MEDIUM_V2_MODEL_PATH,
+    TREE_MEDIUM_MODEL_PATH,
   ) as unknown as GLTFResult;
   const leavesGroupRef = useLeafRustleAnimation({
     intensity: rustleIntensity,
@@ -394,6 +394,6 @@ export function TreeMediumV2({
   );
 }
 
-export { TreeMediumV2 as Model };
+export { TreeMedium as Model };
 
-useGLTF.preload(TREE_MEDIUM_V2_MODEL_PATH);
+useGLTF.preload(TREE_MEDIUM_MODEL_PATH);

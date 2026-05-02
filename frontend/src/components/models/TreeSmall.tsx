@@ -12,7 +12,7 @@ import {
   type TreeRootMeshConfig,
 } from "./TreeRootFillMesh";
 
-const TREE_SMALL_V2_MODEL_PATH = "/models/tree_small_v2.glb";
+const TREE_SMALL_MODEL_PATH = "/models/tree_small.glb";
 const TREE_BASE_POSITION: [number, number, number] = [-35.432, 0, 311.575];
 const TREE_OFFSET_FROM_BASE: [number, number, number] = [35.432, 0, -311.575];
 
@@ -21,7 +21,7 @@ type GLTFResult = GLTF & {
   materials: Record<string, MeshStandardMaterial>;
 };
 
-type TreeSmallV2Props = ThreeElements["group"] & {
+type TreeSmallProps = ThreeElements["group"] & {
   growthScale?: number;
   hideRoots?: boolean;
   rootsFillProgress?: number;
@@ -45,15 +45,15 @@ const ROOT_MESHES: TreeRootMeshConfig[] = [
   { node: "Cube052", material: "Material.043", position: [-35.41, 0.227, 313.044], rotation: [-3.041, 0, -Math.PI], scale: 0.643 },
 ];
 
-export function TreeSmallV2({
+export function TreeSmall({
   growthScale = 1,
   hideRoots = false,
   rootsFillProgress = 0,
   rustleIntensity = 0,
   ...props
-}: TreeSmallV2Props) {
+}: TreeSmallProps) {
   const { nodes, materials } = useGLTF(
-    TREE_SMALL_V2_MODEL_PATH,
+    TREE_SMALL_MODEL_PATH,
   ) as unknown as GLTFResult;
   const leavesGroupRef = useLeafRustleAnimation({
     intensity: rustleIntensity,
@@ -307,6 +307,6 @@ export function TreeSmallV2({
   );
 }
 
-export { TreeSmallV2 as Model };
+export { TreeSmall as Model };
 
-useGLTF.preload(TREE_SMALL_V2_MODEL_PATH);
+useGLTF.preload(TREE_SMALL_MODEL_PATH);

@@ -2,9 +2,9 @@ import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
 import { ParkScene } from "./models/ParkScene";
-import { TreeSmallV2 } from "./models/TreeSmall_v2";
-import { TreeMediumV2 } from "./models/TreeMedium_v2";
-import { TreeLargeV2 } from "./models/TreeLarge_v2";
+import { TreeSmall } from "./models/TreeSmall";
+import { TreeMedium } from "./models/TreeMedium";
+import { TreeLarge } from "./models/TreeLarge";
 
 type MainSceneProps = {
   mainLocationName: string;
@@ -114,7 +114,7 @@ function getSecondaryMainTreeVariant(
   return variant;
 }
 
-type MainTreeV2Props = {
+type MainTreeModelProps = {
   growthScale: number;
   hideRoots?: boolean;
   position: [number, number, number];
@@ -124,7 +124,7 @@ type MainTreeV2Props = {
   variant: MainTreeVariant;
 };
 
-function MainTreeV2({
+function MainTreeModel({
   growthScale,
   hideRoots = false,
   position,
@@ -132,7 +132,7 @@ function MainTreeV2({
   rustleIntensity,
   scale,
   variant,
-}: MainTreeV2Props) {
+}: MainTreeModelProps) {
   const treeProps = {
     position,
     growthScale,
@@ -143,14 +143,14 @@ function MainTreeV2({
   };
 
   if (variant === "small") {
-    return <TreeSmallV2 {...treeProps} />;
+    return <TreeSmall {...treeProps} />;
   }
 
   if (variant === "medium") {
-    return <TreeMediumV2 {...treeProps} />;
+    return <TreeMedium {...treeProps} />;
   }
 
-  return <TreeLargeV2 {...treeProps} />;
+  return <TreeLarge {...treeProps} />;
 }
 
 const MainScene = ({
@@ -200,14 +200,14 @@ const MainScene = ({
       <Lights />
       <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
       <ParkScene position={TREE_SCENE_POSITION} />
-      <MainTreeV2
+      <MainTreeModel
         position={mainTreePosition}
         variant={mainTreeVariant}
         growthScale={treeGrowthScale}
         rootsFillProgress={rootsFillProgress}
         rustleIntensity={leafRustleIntensity}
       />
-      <MainTreeV2
+      <MainTreeModel
         hideRoots
         position={secondaryTreePosition}
         scale={SECONDARY_TREE_SCALE}
