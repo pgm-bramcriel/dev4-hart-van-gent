@@ -1,7 +1,7 @@
 import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
-import { TreeScene } from "./models/TreeScene";
+import { ParkScene } from "./models/ParkScene";
 import { TreeSapling } from "./models/TreeSapling";
 import { MainTree } from "./models/MainTree";
 import { TreeLarge } from "./models/TreeLarge";
@@ -21,6 +21,7 @@ const MAIN_TREE_LABEL_POSITION: [number, number, number] = [0, 25.2, 0];
 const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -18];
 const SECONDARY_TREE_SCALE = 0.45;
+const SCENE_FOG_COLOR = "#88e1eb";
 
 type SecondaryTreeVariant = "sapling" | "medium" | "large";
 
@@ -71,8 +72,6 @@ const MainScene = ({
   secondaryLocationHeightLabel,
   mainLocationHeightCm,
   secondaryLocationHeightCm,
-  leafRustleIntensity,
-  rootsFillProgress,
 }: MainSceneProps) => {
   const { treeGrowthScale } = useGrowAnimation({
     mainLocationHeightCm,
@@ -94,20 +93,16 @@ const MainScene = ({
   return (
     <>
       <OrbitControls
-        target={[2.8189748722161325, 15.782626546927926, -0.37117111828601307]}
-        enableZoom={false}
-        enablePan={false}
-        enableRotate={false}
+        target={[2.980861940630329, 14.538627488481774, -0.48901107383943215]}
+        enableZoom={true}
+        enablePan={true}
+        enableRotate={true}
       />
       <Lights />
-      <TreeScene
-        position={TREE_SCENE_POSITION}
-        growthScale={treeGrowthScale}
-        rustleIntensity={leafRustleIntensity}
-        rootsFillProgress={rootsFillProgress}
-      />
-      <SecondaryTree heightCm={secondaryLocationHeightCm} />
-      <Html
+      <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
+      <ParkScene position={TREE_SCENE_POSITION} />
+      {/* <SecondaryTree heightCm={secondaryLocationHeightCm} /> */}
+      {/* <Html
         position={secondaryLabelPosition}
         transform
         sprite
@@ -136,7 +131,7 @@ const MainScene = ({
             {mainLocationHeightLabel}
           </p>
         </div>
-      </Html>
+      </Html> */}
     </>
   );
 };
