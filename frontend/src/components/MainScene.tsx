@@ -25,7 +25,7 @@ type MainSceneProps = {
 
 const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 const MAIN_TREE_BASE_POSITION: [number, number, number] = TREE_SCENE_POSITION;
-const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -18];
+const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -19];
 const SECONDARY_TREE_SCALE = 0.45;
 const SCENE_FOG_COLOR = "#88e1eb";
 
@@ -166,9 +166,9 @@ const MainScene = ({
     <>
       <OrbitControls
         target={[2.8622868061091964, 15.172575341047178, -0.5270746714055188]}
-        enableZoom={true}
-        enablePan={true}
-        enableRotate={true}
+        enableZoom={false}
+        enablePan={false}
+        enableRotate={false}
       />
       <Lights />
       <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
