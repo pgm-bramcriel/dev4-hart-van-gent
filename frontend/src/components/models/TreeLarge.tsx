@@ -651,7 +651,7 @@ export function TreeLarge({
               position={[-29.565, 14.714, 164.673]}
               rotation={[2.131, -1.297, -Math.PI]}
               scale={[1.229, 1.206, 0.91]}
-              visible={treeStage >= 3}
+              visible={treeStage >= 1}
             />
             <mesh
               castShadow
@@ -660,7 +660,7 @@ export function TreeLarge({
               material={materials["Leaves.027"]}
               position={[-34.834, 19.577, 162.088]}
               scale={1.505}
-              visible={treeStage >= 3}
+              visible={treeStage >= 1}
             />
           </group>
         </group>
