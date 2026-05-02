@@ -18,7 +18,7 @@ import {
 const cameraSettings = {
   fov: 45,
   far: 400,
-  position: [-39.67618366449233, 7.2133763991699835, -0.5720577806915584],
+  position: [-39.67678544096871, 7.213376399169939, -0.002985271666468517],
 };
 
 const HEART_COUNTDOWN_INTERVAL_MS = 30;

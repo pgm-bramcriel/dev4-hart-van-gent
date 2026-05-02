@@ -165,7 +165,7 @@ const MainScene = ({
   return (
     <>
       <OrbitControls
-        target={[2.8622868061091964, 15.172575341047178, -0.5270746714055188]}
+        target={[2.8616850296329437, 15.172575341047178, 0.041997837619580765]}
         enableZoom={false}
         enablePan={false}
         enableRotate={false}
