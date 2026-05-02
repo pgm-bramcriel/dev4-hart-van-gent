@@ -2,6 +2,8 @@ import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
 import { ParkScene } from "./models/ParkScene";
+import { TreeSmallV2 } from "./models/TreeSmall_v2";
+import { TreeMediumV2 } from "./models/TreeMedium_v2";
 import { TreeLargeV2 } from "./models/TreeLarge_v2";
 
 type MainSceneProps = {
@@ -29,8 +31,8 @@ const MAIN_TREE_VARIANT_OFFSETS: Record<
   MainTreeVariant,
   [number, number, number]
 > = {
-  small: [0, 0, 0],
-  medium: [0, 0, 0],
+  small: [0, 0, -149.487],
+  medium: [0, 0, -304.702],
   large: [0, 0, 0],
 };
 
@@ -56,16 +58,64 @@ function getSecondaryTreeVariant(
   return "large";
 }
 
+function getMainTreeVariant(heightCm: number | null): MainTreeVariant {
+  const heightMeters = (heightCm ?? 0) / 100;
+
+  if (heightMeters < 3) {
+    return "small";
+  }
+
+  if (heightMeters < 6) {
+    return "medium";
+  }
+
+  return "large";
+}
+
 function getMainTreePosition(
   variant: MainTreeVariant,
+  offsetOverride?: [number, number, number],
 ): [number, number, number] {
-  const offset = MAIN_TREE_VARIANT_OFFSETS[variant];
+  const offset = offsetOverride ?? MAIN_TREE_VARIANT_OFFSETS[variant];
 
   return [
     MAIN_TREE_BASE_POSITION[0] + offset[0],
     MAIN_TREE_BASE_POSITION[1] + offset[1],
     MAIN_TREE_BASE_POSITION[2] + offset[2],
   ];
+}
+
+type MainTreeV2Props = {
+  growthScale: number;
+  position: [number, number, number];
+  rootsFillProgress: number;
+  rustleIntensity: number;
+  variant: MainTreeVariant;
+};
+
+function MainTreeV2({
+  growthScale,
+  position,
+  rootsFillProgress,
+  rustleIntensity,
+  variant,
+}: MainTreeV2Props) {
+  const treeProps = {
+    position,
+    growthScale,
+    rootsFillProgress,
+    rustleIntensity,
+  };
+
+  if (variant === "small") {
+    return <TreeSmallV2 {...treeProps} />;
+  }
+
+  if (variant === "medium") {
+    return <TreeMediumV2 {...treeProps} />;
+  }
+
+  return <TreeLargeV2 {...treeProps} />;
 }
 
 const MainScene = ({
@@ -94,7 +144,8 @@ const MainScene = ({
     SECONDARY_TREE_LABEL_HEIGHT[secondaryTreeVariant] * SECONDARY_TREE_SCALE,
     SECONDARY_TREE_POSITION[2],
   ];
-  const mainTreePosition = getMainTreePosition("large");
+  const mainTreeVariant = getMainTreeVariant(mainLocationHeightCm);
+  const mainTreePosition = getMainTreePosition(mainTreeVariant);
 
   return (
     <>
@@ -107,8 +158,9 @@ const MainScene = ({
       <Lights />
       <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
       <ParkScene position={TREE_SCENE_POSITION} />
-      <TreeLargeV2
+      <MainTreeV2
         position={mainTreePosition}
+        variant={mainTreeVariant}
         growthScale={treeGrowthScale}
         rootsFillProgress={rootsFillProgress}
         rustleIntensity={leafRustleIntensity}
