@@ -1,9 +1,16 @@
 import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
-import { MainTree } from "./models/MainTree";
+import { ParkScene } from "./models/ParkScene";
+import { TreeSmall } from "./models/TreeSmall";
+import { TreeMedium } from "./models/TreeMedium";
 import { TreeLarge } from "./models/TreeLarge";
-import { TreeSapling } from "./models/TreeSapling";
+import {
+  getTreeStage,
+  getTreeVariant,
+  type TreeStage,
+  type TreeVariant,
+} from "@/utils/treeBreakpoints";
 
 type MainSceneProps = {
   mainLocationName: string;
@@ -13,72 +20,101 @@ type MainSceneProps = {
   mainLocationHeightCm: number | null;
   secondaryLocationHeightCm: number | null;
   leafRustleIntensity: number;
+  rootsFillProgress: number;
 };
 
-type TreeVariant = "sapling" | "main" | "large";
-const MAIN_TREE_POSITION: [number, number, number] = [0, -1.4, 0];
-const MAIN_TREE_ROTATION: [number, number, number] = [0, -0.8, 0];
-const MAIN_TREE_BASE_SCALE = 0.18;
-const SECONDARY_TREE_POSITION: [number, number, number] = [-2, -2.08, -2.8];
-const SECONDARY_TREE_ROTATION: [number, number, number] = [0, -0.9, 0];
-const SECONDARY_TREE_BASE_SCALE = 0.12;
-const HILL_1_POSITION: [number, number, number] = [3.3, -3.0, -1.4];
-const HILL_1_SCALE: [number, number, number] = [5.6, 1.8, 2.2];
-const HILL_2_POSITION: [number, number, number] = [0, -3.3, 0.4];
-const HILL_2_SCALE: [number, number, number] = [4.2, 2.1, 2.4];
-const HILL_3_POSITION: [number, number, number] = [-3.8, -3.1, -0.8];
-const HILL_3_SCALE: [number, number, number] = [4.8, 1.7, 2.1];
+const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
+const MAIN_TREE_BASE_POSITION: [number, number, number] = TREE_SCENE_POSITION;
+const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -19];
+const SECONDARY_TREE_SCALE = 0.45;
+const SCENE_FOG_COLOR = "#88e1eb";
 
-function getTreeVariant(heightInCm: number | null): TreeVariant {
-  if (heightInCm === null) {
-    return "main";
-  }
+const MAIN_TREE_VARIANT_OFFSETS: Record<TreeVariant, [number, number, number]> =
+  {
+    small: [0, 0, -149.487],
+    medium: [0, 0, -304.702],
+    large: [0, 0, 0],
+  };
 
-  const heightInMeters = heightInCm / 100;
+const MAIN_TREE_LABEL_HEIGHT: Record<TreeVariant, number> = {
+  small: 15,
+  medium: 20,
+  large: 25.2,
+};
 
-  if (heightInMeters < 3) {
-    return "sapling";
-  }
+const SECONDARY_TREE_LABEL_HEIGHT: Record<TreeVariant, number> = {
+  small: 20,
+  medium: 25.2,
+  large: 30.5,
+};
 
-  if (heightInMeters < 8) {
-    return "main";
-  }
+function getMainTreePosition(
+  variant: TreeVariant,
+  offsetOverride?: [number, number, number],
+): [number, number, number] {
+  const offset = offsetOverride ?? MAIN_TREE_VARIANT_OFFSETS[variant];
 
-  return "large";
+  return [
+    MAIN_TREE_BASE_POSITION[0] + offset[0],
+    MAIN_TREE_BASE_POSITION[1] + offset[1],
+    MAIN_TREE_BASE_POSITION[2] + offset[2],
+  ];
 }
 
-function getTreeComponent(variant: TreeVariant) {
-  if (variant === "sapling") {
-    return TreeSapling;
-  }
+function getAnchoredTreePosition(
+  anchorPosition: [number, number, number],
+  variant: TreeVariant,
+  scale = 1,
+): [number, number, number] {
+  const modelOffset = getMainTreePosition(variant);
 
-  if (variant === "large") {
-    return TreeLarge;
-  }
-
-  return MainTree;
+  return [
+    anchorPosition[0] + modelOffset[0] * scale,
+    anchorPosition[1] + modelOffset[1] * scale,
+    anchorPosition[2] + modelOffset[2] * scale,
+  ];
 }
 
-function getTreeScaleMultiplier(variant: TreeVariant) {
-  if (variant === "sapling") {
-    return 2;
+type MainTreeModelProps = {
+  growthScale: number;
+  hideRoots?: boolean;
+  position: [number, number, number];
+  rootsFillProgress: number;
+  rustleIntensity: number;
+  scale?: number;
+  treeStage: TreeStage;
+  variant: TreeVariant;
+};
+
+function MainTreeModel({
+  growthScale,
+  hideRoots = false,
+  position,
+  rootsFillProgress,
+  rustleIntensity,
+  scale,
+  treeStage,
+  variant,
+}: MainTreeModelProps) {
+  const treeProps = {
+    position,
+    growthScale,
+    hideRoots,
+    rootsFillProgress,
+    rustleIntensity,
+    scale,
+    treeStage,
+  };
+
+  if (variant === "small") {
+    return <TreeSmall {...treeProps} />;
   }
 
-  if (variant === "large") {
-    return 0.65;
+  if (variant === "medium") {
+    return <TreeMedium {...treeProps} />;
   }
 
-  return 1;
-}
-
-function getLabelOffsetY(variant: TreeVariant, treeScale: number) {
-  const modelHeightByVariant = {
-    sapling: 2,
-    main: 13,
-    large: 20,
-  } as const;
-
-  return modelHeightByVariant[variant] * treeScale + 0.35;
+  return <TreeLarge {...treeProps} />;
 }
 
 const MainScene = ({
@@ -89,99 +125,99 @@ const MainScene = ({
   mainLocationHeightCm,
   secondaryLocationHeightCm,
   leafRustleIntensity,
+  rootsFillProgress,
 }: MainSceneProps) => {
-  const mainTreeVariant = getTreeVariant(mainLocationHeightCm);
-  const secondaryTreeVariant = getTreeVariant(secondaryLocationHeightCm);
-  const MainLocationTree = getTreeComponent(mainTreeVariant);
-  const SecondaryLocationTree = getTreeComponent(secondaryTreeVariant);
-  const { cameraCompensationScale } = useGrowAnimation({
+  const { treeGrowthScale } = useGrowAnimation({
     mainLocationHeightCm,
-    mainTreePositionZ: MAIN_TREE_POSITION[2],
   });
-
-  const mainTreeScaleMultiplier = getTreeScaleMultiplier(mainTreeVariant);
-  const secondaryTreeScaleMultiplier =
-    getTreeScaleMultiplier(secondaryTreeVariant);
-  const effectiveMainTreeScale =
-    MAIN_TREE_BASE_SCALE * mainTreeScaleMultiplier * cameraCompensationScale;
-  const effectiveSecondaryTreeScale =
-    SECONDARY_TREE_BASE_SCALE * secondaryTreeScaleMultiplier;
-  const mainLabelOffsetY = getLabelOffsetY(
-    mainTreeVariant,
-    effectiveMainTreeScale,
+  const secondaryTreeVariant = getTreeVariant(
+    secondaryLocationHeightCm,
+    "secondary",
   );
-  const secondaryLabelOffsetY = getLabelOffsetY(
+  const mainTreeVariant = getTreeVariant(mainLocationHeightCm, "main");
+  const mainTreeStage = getTreeStage(
+    mainLocationHeightCm,
+    "main",
+    mainTreeVariant,
+  );
+  const secondaryTreeStage = getTreeStage(
+    secondaryLocationHeightCm,
+    "secondary",
     secondaryTreeVariant,
-    effectiveSecondaryTreeScale,
+  );
+  const labelPosition: [number, number, number] = [
+    0,
+    MAIN_TREE_LABEL_HEIGHT[mainTreeVariant] * treeGrowthScale,
+    0,
+  ];
+  const secondaryLabelPosition: [number, number, number] = [
+    SECONDARY_TREE_POSITION[0],
+    SECONDARY_TREE_LABEL_HEIGHT[secondaryTreeVariant] * SECONDARY_TREE_SCALE,
+    SECONDARY_TREE_POSITION[2],
+  ];
+  const mainTreePosition = getAnchoredTreePosition([0, 0, 0], mainTreeVariant);
+  const secondaryTreePosition = getAnchoredTreePosition(
+    SECONDARY_TREE_POSITION,
+    secondaryTreeVariant,
+    SECONDARY_TREE_SCALE,
   );
 
   return (
     <>
       <OrbitControls
+        target={[2.8616850296329437, 15.172575341047178, 0.041997837619580765]}
         enableZoom={false}
         enablePan={false}
         enableRotate={false}
       />
       <Lights />
-
-      <mesh position={HILL_1_POSITION} scale={HILL_1_SCALE}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <meshBasicMaterial color="#46AA4A" />
-      </mesh>
-      <mesh position={HILL_2_POSITION} scale={HILL_2_SCALE}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <meshBasicMaterial color="#55B959" />
-      </mesh>
-      <mesh position={HILL_3_POSITION} scale={HILL_3_SCALE}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <meshBasicMaterial color="#46AA4A" />
-      </mesh>
-
-      <MainLocationTree
-        position={MAIN_TREE_POSITION}
-        rotation={MAIN_TREE_ROTATION}
-        scale={effectiveMainTreeScale}
+      <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
+      <ParkScene position={TREE_SCENE_POSITION} />
+      <MainTreeModel
+        position={mainTreePosition}
+        variant={mainTreeVariant}
+        treeStage={mainTreeStage}
+        growthScale={treeGrowthScale}
+        rootsFillProgress={rootsFillProgress}
         rustleIntensity={leafRustleIntensity}
       />
+      <MainTreeModel
+        hideRoots
+        position={secondaryTreePosition}
+        scale={SECONDARY_TREE_SCALE}
+        variant={secondaryTreeVariant}
+        treeStage={secondaryTreeStage}
+        growthScale={1}
+        rootsFillProgress={0}
+        rustleIntensity={0}
+      />
       <Html
-        position={[
-          MAIN_TREE_POSITION[0],
-          MAIN_TREE_POSITION[1] + mainLabelOffsetY,
-          MAIN_TREE_POSITION[2],
-        ]}
+        position={secondaryLabelPosition}
         transform
+        sprite
         center
-        distanceFactor={1.8}
+        distanceFactor={16}
+      >
+        <div className="pointer-events-none text-center text-black">
+          <p className="text-2xl font-bold leading-tight">
+            {secondaryLocationName}
+          </p>
+          <p className="text-base font-regular leading-tight">
+            {secondaryLocationHeightLabel}
+          </p>
+        </div>
+      </Html>
+      <Html
+        position={labelPosition}
+        transform
+        sprite
+        center
+        distanceFactor={16}
       >
         <div className="pointer-events-none text-center text-black">
           <p className="text-3xl font-bold leading-tight">{mainLocationName}</p>
           <p className="text-lg font-regular leading-tight">
             {mainLocationHeightLabel}
-          </p>
-        </div>
-      </Html>
-      <SecondaryLocationTree
-        position={SECONDARY_TREE_POSITION}
-        rotation={SECONDARY_TREE_ROTATION}
-        scale={effectiveSecondaryTreeScale}
-        rustleIntensity={0}
-      />
-      <Html
-        position={[
-          SECONDARY_TREE_POSITION[0],
-          SECONDARY_TREE_POSITION[1] + secondaryLabelOffsetY,
-          SECONDARY_TREE_POSITION[2],
-        ]}
-        transform
-        center
-        distanceFactor={1.8}
-      >
-        <div className="pointer-events-none text-center text-black">
-          <p className="text-3xl font-bold leading-tight">
-            {secondaryLocationName}
-          </p>
-          <p className="text-lg font-regular leading-tight">
-            {secondaryLocationHeightLabel}
           </p>
         </div>
       </Html>

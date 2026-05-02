@@ -2,6 +2,10 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import MainScene from "@/components/MainScene";
 import heartIcon from "@/assets/heart_icon.svg";
+import {
+  SessionScreenFxOverlay,
+  SessionScreenFxPostprocess,
+} from "@/components/scene/SessionScreenFx";
 import { supabase } from "@/utils/supabase";
 import { parseHeartbeatWsMessage } from "@/utils/heartbeatMessages";
 import {
@@ -14,7 +18,7 @@ import {
 const cameraSettings = {
   fov: 45,
   far: 400,
-  position: [0, 0, 5],
+  position: [-39.67678544096871, 7.213376399169939, -0.002985271666468517],
 };
 
 const HEART_COUNTDOWN_INTERVAL_MS = 30;
@@ -25,6 +29,11 @@ const SESSION_RUSTLE_STEP = 0.08;
 const SESSION_RUSTLE_INTERVAL_MS = 1000;
 const RUSTLE_COOLDOWN_STEP = 0.035;
 const RUSTLE_COOLDOWN_INTERVAL_MS = 140;
+const ROOTS_FILL_TO_FULL_DURATION_MS = 3000;
+const SESSION_SCREEN_FX_RAMP_DURATION_MS = 9000;
+const SESSION_SCREEN_FX_TICK_MS = 80;
+const SESSION_SCREEN_FX_PULSE_PERIOD_MS = 1000;
+const SESSION_SCREEN_FX_FADE_OUT_MS = 1200;
 
 function startHeartbeatCountdown(
   startValue: number,
@@ -91,13 +100,16 @@ function formatHeightInMeters(heightInCm: number | null) {
 
   const meters = heightInCm / 100;
   const compactValue = Number(meters.toFixed(2)).toString();
-  return `${compactValue} meter`;
+  return `${compactValue} meters`;
 }
 
 function Home() {
   const [heartValue, setHeartValue] = useState(0);
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [leafRustleIntensity, setLeafRustleIntensity] = useState(0);
+  const [rootsFillProgress, setRootsFillProgress] = useState(0);
+  const [isSessionScreenFxActive, setIsSessionScreenFxActive] = useState(false);
+  const [sessionScreenFxStrength, setSessionScreenFxStrength] = useState(0);
   const pendingSessionAverageRef = useRef<number | null>(null);
   const mainLocationRef = useRef<LocationRow | null>(null);
   const heartValueRef = useRef(0);
@@ -105,6 +117,12 @@ function Home() {
   const rustleCooldownIntervalRef = useRef<number | null>(null);
   const cancelHeartCountdownRef = useRef<(() => void) | null>(null);
   const cancelTreeGrowthRef = useRef<(() => void) | null>(null);
+  const rootsFillAnimationFrameRef = useRef<number | null>(null);
+  const rootsFillAnimationRunIdRef = useRef(0);
+  const sessionScreenFxIntervalRef = useRef<number | null>(null);
+  const sessionScreenFxStartedAtRef = useRef(0);
+  const sessionScreenFxFadeFrameRef = useRef<number | null>(null);
+  const sessionScreenFxStrengthRef = useRef(0);
   const configuredMainLocationName = (
     import.meta.env.VITE_MAIN_LOCATION ??
     import.meta.env.MAIN_LOCATION ??
@@ -129,6 +147,10 @@ function Home() {
   useEffect(() => {
     heartValueRef.current = heartValue;
   }, [heartValue]);
+
+  useEffect(() => {
+    sessionScreenFxStrengthRef.current = sessionScreenFxStrength;
+  }, [sessionScreenFxStrength]);
 
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3002";
@@ -160,6 +182,128 @@ function Home() {
       }
     }
 
+    function stopRootsFillAnimation(reset = true) {
+      rootsFillAnimationRunIdRef.current += 1;
+
+      if (rootsFillAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(rootsFillAnimationFrameRef.current);
+        rootsFillAnimationFrameRef.current = null;
+      }
+
+      if (reset) {
+        setRootsFillProgress(0);
+      }
+    }
+
+    function stopSessionScreenFx(shouldFadeOut = false) {
+      if (sessionScreenFxIntervalRef.current !== null) {
+        window.clearInterval(sessionScreenFxIntervalRef.current);
+        sessionScreenFxIntervalRef.current = null;
+      }
+
+      if (sessionScreenFxFadeFrameRef.current !== null) {
+        window.cancelAnimationFrame(sessionScreenFxFadeFrameRef.current);
+        sessionScreenFxFadeFrameRef.current = null;
+      }
+
+      if (!shouldFadeOut) {
+        setIsSessionScreenFxActive(false);
+        setSessionScreenFxStrength(0);
+        return;
+      }
+
+      const initialStrength = sessionScreenFxStrengthRef.current;
+      const startedAt = performance.now();
+
+      const animateFadeOut = (now: number) => {
+        const progress = Math.min(
+          (now - startedAt) / SESSION_SCREEN_FX_FADE_OUT_MS,
+          1,
+        );
+        const easedProgress = 1 - Math.pow(1 - progress, 2);
+        const nextStrength = initialStrength * (1 - easedProgress);
+        setSessionScreenFxStrength(nextStrength);
+
+        if (progress >= 1) {
+          setIsSessionScreenFxActive(false);
+          setSessionScreenFxStrength(0);
+          sessionScreenFxFadeFrameRef.current = null;
+          return;
+        }
+
+        sessionScreenFxFadeFrameRef.current =
+          window.requestAnimationFrame(animateFadeOut);
+      };
+
+      sessionScreenFxFadeFrameRef.current =
+        window.requestAnimationFrame(animateFadeOut);
+    }
+
+    function startSessionScreenFx() {
+      stopSessionScreenFx();
+
+      sessionScreenFxStartedAtRef.current = performance.now();
+      setIsSessionScreenFxActive(true);
+      setSessionScreenFxStrength(0.18);
+
+      sessionScreenFxIntervalRef.current = window.setInterval(() => {
+        const elapsedMs =
+          performance.now() - sessionScreenFxStartedAtRef.current;
+        const rampProgress = Math.min(
+          elapsedMs / SESSION_SCREEN_FX_RAMP_DURATION_MS,
+          1,
+        );
+        const pulse =
+          (Math.sin(
+            (elapsedMs / SESSION_SCREEN_FX_PULSE_PERIOD_MS) * Math.PI * 2,
+          ) +
+            1) /
+          2;
+        const subtleToIntense = 0.35 + rampProgress * 0.85;
+        const pulsedStrength = Math.min(
+          1.2,
+          subtleToIntense * (0.55 + pulse * 0.55),
+        );
+        setSessionScreenFxStrength(pulsedStrength);
+      }, SESSION_SCREEN_FX_TICK_MS);
+    }
+
+    function animateRootsFillToFull(durationMs: number) {
+      const runId = rootsFillAnimationRunIdRef.current + 1;
+      rootsFillAnimationRunIdRef.current = runId;
+
+      if (rootsFillAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(rootsFillAnimationFrameRef.current);
+        rootsFillAnimationFrameRef.current = null;
+      }
+
+      return new Promise<boolean>((resolve) => {
+        const startedAt = performance.now();
+
+        const animate = (now: number) => {
+          if (rootsFillAnimationRunIdRef.current !== runId) {
+            resolve(false);
+            return;
+          }
+
+          const progress = Math.min((now - startedAt) / durationMs, 1);
+          setRootsFillProgress(progress);
+
+          if (progress >= 1) {
+            rootsFillAnimationFrameRef.current = null;
+            resolve(true);
+            return;
+          }
+
+          rootsFillAnimationFrameRef.current =
+            window.requestAnimationFrame(animate);
+        };
+
+        rootsFillAnimationFrameRef.current =
+          window.requestAnimationFrame(animate);
+      });
+    }
+
     function startSessionRustleRamp() {
       stopSessionRustleRamp();
       stopRustleCooldown();
@@ -179,7 +323,10 @@ function Home() {
       stopRustleCooldown();
       rustleCooldownIntervalRef.current = window.setInterval(() => {
         setLeafRustleIntensity((previousIntensity) => {
-          const nextIntensity = Math.max(0, previousIntensity - RUSTLE_COOLDOWN_STEP);
+          const nextIntensity = Math.max(
+            0,
+            previousIntensity - RUSTLE_COOLDOWN_STEP,
+          );
           if (nextIntensity <= 0) {
             stopRustleCooldown();
           }
@@ -246,6 +393,7 @@ function Home() {
       if (error) {
         console.error("Error saving grown tree height:", error);
       }
+      setRootsFillProgress(0);
 
       return true;
     }
@@ -269,6 +417,8 @@ function Home() {
       if (message.type === "heartbeat-session-start") {
         stopRunningAnimations();
         startSessionRustleRamp();
+        startSessionScreenFx();
+        stopRootsFillAnimation(true);
         pendingSessionAverageRef.current = null;
         return;
       }
@@ -281,9 +431,17 @@ function Home() {
       if (message.type === "heartbeat-session-end") {
         stopSessionRustleRamp();
         stopRustleCooldown();
+        stopSessionScreenFx(true);
         setLeafRustleIntensity(SESSION_RUSTLE_MAX_INTENSITY);
+        const didFinishRootsFill = await animateRootsFillToFull(
+          ROOTS_FILL_TO_FULL_DURATION_MS,
+        );
+        if (!didFinishRootsFill) {
+          return;
+        }
         const didStartGrowth = await handleSessionEnd();
         if (!didStartGrowth) {
+          stopRootsFillAnimation(true);
           startRustleCooldown();
         }
         pendingSessionAverageRef.current = null;
@@ -302,6 +460,8 @@ function Home() {
       stopRunningAnimations();
       stopSessionRustleRamp();
       stopRustleCooldown();
+      stopRootsFillAnimation(true);
+      stopSessionScreenFx();
       socket.close();
     };
   }, []);
@@ -326,6 +486,10 @@ function Home() {
 
   return (
     <div className="w-full h-screen relative bg-[#88E1EB]">
+      <SessionScreenFxOverlay
+        isActive={isSessionScreenFxActive}
+        strength={sessionScreenFxStrength}
+      />
       <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
         <div className="flex items-center gap-2 text-black">
           <img src={heartIcon} alt="Heartbeat icon" className="h-10 w-10" />
@@ -348,8 +512,13 @@ function Home() {
             mainLocationHeightCm={mainLocation?.height ?? null}
             secondaryLocationHeightCm={secondaryLocation?.height ?? null}
             leafRustleIntensity={leafRustleIntensity}
+            rootsFillProgress={rootsFillProgress}
           />
         </Suspense>
+        <SessionScreenFxPostprocess
+          isActive={isSessionScreenFxActive}
+          strength={sessionScreenFxStrength}
+        />
       </Canvas>
     </div>
   );

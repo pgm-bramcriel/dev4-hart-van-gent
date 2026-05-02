@@ -1,39 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { MathUtils } from "three";
 
-const CM_TO_CAMERA_ZOOM_OUT = 0.008;
-const CAMERA_Z_FOLLOW_SPEED = 8;
+const CM_TO_TREE_GROWTH_SCALE = 0.0008;
+const MAX_TREE_GROWTH_SCALE_KICK = 0.24;
 const GROWTH_KICK_RESPONSE_SPEED = 5;
 const GROWTH_KICK_RETURN_SPEED = 0.4;
 const GROWTH_KICK_SHRINK_DELAY_MS = 4000;
 
 type UseGrowAnimationParams = {
   mainLocationHeightCm: number | null;
-  mainTreePositionZ: number;
 };
-
-function getCameraZoomOutForGrowth(growthCm: number) {
-  return growthCm * CM_TO_CAMERA_ZOOM_OUT;
-}
 
 export function useGrowAnimation({
   mainLocationHeightCm,
-  mainTreePositionZ,
 }: UseGrowAnimationParams) {
-  const { camera } = useThree();
   const previousMainHeightCmRef = useRef<number | null>(null);
-  const baseCameraZRef = useRef<number | null>(null);
-  const targetGrowthKickRef = useRef(0);
-  const smoothedGrowthKickRef = useRef(0);
+  const targetTreeGrowthKickRef = useRef(0);
+  const smoothedTreeGrowthKickRef = useRef(0);
   const lastGrowthKickAtRef = useRef(0);
-  const [cameraCompensationScale, setCameraCompensationScale] = useState(1);
-
-  useEffect(() => {
-    if (baseCameraZRef.current === null) {
-      baseCameraZRef.current = camera.position.z;
-    }
-  }, [camera]);
+  const [treeGrowthScale, setTreeGrowthScale] = useState(1);
 
   useEffect(() => {
     if (mainLocationHeightCm === null) return;
@@ -49,8 +35,11 @@ export function useGrowAnimation({
     );
 
     if (growthCm > 0) {
-      const growthKick = getCameraZoomOutForGrowth(growthCm);
-      targetGrowthKickRef.current += growthKick;
+      targetTreeGrowthKickRef.current = MathUtils.clamp(
+        targetTreeGrowthKickRef.current + growthCm * CM_TO_TREE_GROWTH_SCALE,
+        0,
+        MAX_TREE_GROWTH_SCALE_KICK,
+      );
       lastGrowthKickAtRef.current = Date.now();
     }
 
@@ -58,51 +47,30 @@ export function useGrowAnimation({
   }, [mainLocationHeightCm]);
 
   useFrame((_, delta) => {
-    if (baseCameraZRef.current === null) {
-      baseCameraZRef.current = camera.position.z;
-    }
-
-    const baseCameraZ = baseCameraZRef.current;
     const shrinkDelayPassed =
       Date.now() - lastGrowthKickAtRef.current >= GROWTH_KICK_SHRINK_DELAY_MS;
     if (shrinkDelayPassed) {
-      targetGrowthKickRef.current = MathUtils.damp(
-        targetGrowthKickRef.current,
+      targetTreeGrowthKickRef.current = MathUtils.damp(
+        targetTreeGrowthKickRef.current,
         0,
         GROWTH_KICK_RETURN_SPEED,
         delta,
       );
     }
-    smoothedGrowthKickRef.current = MathUtils.damp(
-      smoothedGrowthKickRef.current,
-      targetGrowthKickRef.current,
+    smoothedTreeGrowthKickRef.current = MathUtils.damp(
+      smoothedTreeGrowthKickRef.current,
+      targetTreeGrowthKickRef.current,
       GROWTH_KICK_RESPONSE_SPEED,
       delta,
     );
 
-    const targetCameraZ = baseCameraZ + smoothedGrowthKickRef.current;
-    camera.position.z = MathUtils.damp(
-      camera.position.z,
-      targetCameraZ,
-      CAMERA_Z_FOLLOW_SPEED,
-      delta,
-    );
-    camera.updateProjectionMatrix();
-
-    const baseCameraDistanceToMainTree = baseCameraZ - mainTreePositionZ;
-    const currentCameraDistanceToMainTree =
-      camera.position.z - mainTreePositionZ;
-    const nextCameraCompensationScale =
-      baseCameraDistanceToMainTree > 0 && currentCameraDistanceToMainTree > 0
-        ? currentCameraDistanceToMainTree / baseCameraDistanceToMainTree
-        : 1;
-
-    setCameraCompensationScale((currentScale) =>
-      Math.abs(currentScale - nextCameraCompensationScale) < 0.0005
+    const nextTreeGrowthScale = 1 + smoothedTreeGrowthKickRef.current;
+    setTreeGrowthScale((currentScale) =>
+      Math.abs(currentScale - nextTreeGrowthScale) < 0.0005
         ? currentScale
-        : nextCameraCompensationScale,
+        : nextTreeGrowthScale,
     );
   });
 
-  return { cameraCompensationScale };
+  return { treeGrowthScale };
 }
