@@ -2,9 +2,7 @@ import { Html, OrbitControls } from "@react-three/drei";
 import Lights from "./scene/Lights";
 import { useGrowAnimation } from "./scene/GrowAnimation";
 import { ParkScene } from "./models/ParkScene";
-import { TreeSapling } from "./models/TreeSapling";
-import { MainTree } from "./models/MainTree";
-import { TreeLarge } from "./models/TreeLarge";
+import { TreeLargeV2 } from "./models/TreeLarge_v2";
 
 type MainSceneProps = {
   mainLocationName: string;
@@ -19,11 +17,22 @@ type MainSceneProps = {
 
 const MAIN_TREE_LABEL_POSITION: [number, number, number] = [0, 25.2, 0];
 const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
+const MAIN_TREE_BASE_POSITION: [number, number, number] = TREE_SCENE_POSITION;
 const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -18];
 const SECONDARY_TREE_SCALE = 0.45;
 const SCENE_FOG_COLOR = "#88e1eb";
 
+type MainTreeVariant = "small" | "medium" | "large";
 type SecondaryTreeVariant = "sapling" | "medium" | "large";
+
+const MAIN_TREE_VARIANT_OFFSETS: Record<
+  MainTreeVariant,
+  [number, number, number]
+> = {
+  small: [0, 0, 0],
+  medium: [0, 0, 0],
+  large: [0, 0, 0],
+};
 
 const SECONDARY_TREE_LABEL_HEIGHT: Record<SecondaryTreeVariant, number> = {
   sapling: 2.3,
@@ -47,22 +56,16 @@ function getSecondaryTreeVariant(
   return "large";
 }
 
-function SecondaryTree({ heightCm }: { heightCm: number | null }) {
-  const treeVariant = getSecondaryTreeVariant(heightCm);
-  const treeProps = {
-    position: SECONDARY_TREE_POSITION,
-    scale: SECONDARY_TREE_SCALE,
-  } as const;
+function getMainTreePosition(
+  variant: MainTreeVariant,
+): [number, number, number] {
+  const offset = MAIN_TREE_VARIANT_OFFSETS[variant];
 
-  if (treeVariant === "sapling") {
-    return <TreeSapling {...treeProps} />;
-  }
-
-  if (treeVariant === "medium") {
-    return <MainTree {...treeProps} />;
-  }
-
-  return <TreeLarge {...treeProps} />;
+  return [
+    MAIN_TREE_BASE_POSITION[0] + offset[0],
+    MAIN_TREE_BASE_POSITION[1] + offset[1],
+    MAIN_TREE_BASE_POSITION[2] + offset[2],
+  ];
 }
 
 const MainScene = ({
@@ -89,20 +92,21 @@ const MainScene = ({
     SECONDARY_TREE_LABEL_HEIGHT[secondaryTreeVariant] * SECONDARY_TREE_SCALE,
     SECONDARY_TREE_POSITION[2],
   ];
+  const mainTreePosition = getMainTreePosition("large");
 
   return (
     <>
       <OrbitControls
         target={[2.980861940630329, 14.538627488481774, -0.48901107383943215]}
-        enableZoom={true}
-        enablePan={true}
-        enableRotate={true}
+        enableZoom={false}
+        enablePan={false}
+        enableRotate={false}
       />
       <Lights />
       <fog attach="fog" args={[SCENE_FOG_COLOR, 95, 350]} />
       <ParkScene position={TREE_SCENE_POSITION} />
-      {/* <SecondaryTree heightCm={secondaryLocationHeightCm} /> */}
-      {/* <Html
+      <TreeLargeV2 position={mainTreePosition} />
+      <Html
         position={secondaryLabelPosition}
         transform
         sprite
@@ -131,7 +135,7 @@ const MainScene = ({
             {mainLocationHeightLabel}
           </p>
         </div>
-      </Html> */}
+      </Html>
     </>
   );
 };
