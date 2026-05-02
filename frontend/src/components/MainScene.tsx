@@ -17,7 +17,6 @@ type MainSceneProps = {
   rootsFillProgress: number;
 };
 
-const MAIN_TREE_LABEL_POSITION: [number, number, number] = [0, 25.2, 0];
 const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 const MAIN_TREE_BASE_POSITION: [number, number, number] = TREE_SCENE_POSITION;
 const SECONDARY_TREE_POSITION: [number, number, number] = [36, 1.7, -18];
@@ -34,6 +33,12 @@ const MAIN_TREE_VARIANT_OFFSETS: Record<
   small: [0, 0, -149.487],
   medium: [0, 0, -304.702],
   large: [0, 0, 0],
+};
+
+const MAIN_TREE_LABEL_HEIGHT: Record<MainTreeVariant, number> = {
+  small: 15,
+  medium: 20,
+  large: 25.2,
 };
 
 const SECONDARY_TREE_LABEL_HEIGHT: Record<SecondaryTreeVariant, number> = {
@@ -134,17 +139,17 @@ const MainScene = ({
   const secondaryTreeVariant = getSecondaryTreeVariant(
     secondaryLocationHeightCm,
   );
+  const mainTreeVariant = getMainTreeVariant(mainLocationHeightCm);
   const labelPosition: [number, number, number] = [
-    MAIN_TREE_LABEL_POSITION[0],
-    MAIN_TREE_LABEL_POSITION[1] * treeGrowthScale,
-    MAIN_TREE_LABEL_POSITION[2],
+    0,
+    MAIN_TREE_LABEL_HEIGHT[mainTreeVariant] * treeGrowthScale,
+    0,
   ];
   const secondaryLabelPosition: [number, number, number] = [
     SECONDARY_TREE_POSITION[0],
     SECONDARY_TREE_LABEL_HEIGHT[secondaryTreeVariant] * SECONDARY_TREE_SCALE,
     SECONDARY_TREE_POSITION[2],
   ];
-  const mainTreeVariant = getMainTreeVariant(mainLocationHeightCm);
   const mainTreePosition = getMainTreePosition(mainTreeVariant);
 
   return (
