@@ -112,8 +112,11 @@ void loop() {
   // ====================================================
 
   const bool gracePeriodOver = (long)(nowMs - nextSessionAllowedAtMs) >= 0;
+
   if (!isSessionActive && gracePeriodOver && touchState == HIGH) {
+
     isSessionActive = true;
+
     startNewSession();
   }
 
@@ -123,22 +126,28 @@ void loop() {
 
   if (isSessionActive) {
 
-    // Stop immediately if touch/pressure is released (session cancelled)
+    // Stop immediately if touch/pressure is released
     if (touchState == LOW) {
 
       isSessionActive = false;
+
       cancelCurrentSession();
     }
-    // Na exact 8 seconden stoppen
+
+    // Stop after 8 seconds
     else if (millis() - fillStartTime >= SESSION_DURATION_MS) {
 
       isSessionActive = false;
+
       endCurrentSession();
     }
+
     else {
 
       processBPM(pulseValue);
+
       runFillAnimation();
+
       updateMotors();
     }
   }
@@ -173,7 +182,9 @@ void updateMotors() {
 
   if (currentBPM <= 0) return;
 
-  unsigned long beatInterval = (unsigned long)(60000.0 / currentBPM);
+  unsigned long beatInterval =
+    (unsigned long)(60000.0 / currentBPM);
+
   unsigned long now = millis();
 
   // --- Motor 1 ---
@@ -238,6 +249,7 @@ void startNewSession() {
   sampleCount = 0;
 
   fillStartTime = millis();
+
   lastPrintTime = millis();
 
   currentBPM = 0;
@@ -263,7 +275,9 @@ void startNewSession() {
 void endCurrentSession() {
 
   sessionFinishedFlag = true;
-  nextSessionAllowedAtMs = millis() + SESSION_GRACE_PERIOD_MS;
+
+  nextSessionAllowedAtMs =
+    millis() + SESSION_GRACE_PERIOD_MS;
 
   digitalWrite(MOTOR_PIN_1, LOW);
   digitalWrite(MOTOR_PIN_2, LOW);
@@ -277,11 +291,8 @@ void endCurrentSession() {
 
   FastLED.show();
 
-  // BELANGRIJK:
-  // Eerst average printen
   printSessionSummary();
 
-  // Daarna session ended
   Serial.println("--- Session Ended ---");
 }
 
@@ -292,7 +303,9 @@ void endCurrentSession() {
 void cancelCurrentSession() {
 
   sessionFinishedFlag = false;
-  nextSessionAllowedAtMs = millis() + SESSION_GRACE_PERIOD_MS;
+
+  nextSessionAllowedAtMs =
+    millis() + SESSION_GRACE_PERIOD_MS;
 
   digitalWrite(MOTOR_PIN_1, LOW);
   digitalWrite(MOTOR_PIN_2, LOW);
@@ -303,9 +316,11 @@ void cancelCurrentSession() {
   motor2On = false;
 
   fillAllStrips(CRGB(255, 220, 0));
+
   FastLED.show();
 
   sessionIndex = 0;
+
   runningSum = 0;
   sampleCount = 0;
 
@@ -322,7 +337,8 @@ void runFillAnimation() {
 
   lastAnimTime = millis();
 
-  unsigned long elapsed = millis() - fillStartTime;
+  unsigned long elapsed =
+    millis() - fillStartTime;
 
   int ledsToLight = map(
     elapsed,
@@ -332,7 +348,11 @@ void runFillAnimation() {
     NUM_LEDS
   );
 
-  ledsToLight = constrain(ledsToLight, 0, NUM_LEDS);
+  ledsToLight = constrain(
+    ledsToLight,
+    0,
+    NUM_LEDS
+  );
 
   fillAllStrips(CRGB::Black);
 
@@ -347,11 +367,23 @@ void runFillAnimation() {
 }
 
 // ======================================================
-// IDLE
+// IDLE (PULSATING EFFECT)
 // ======================================================
 
 void runSolidIdle() {
-  // idle = gele strip
+
+  // Very slow breathing wave
+  uint8_t brightness = beatsin8(
+    15,     // speed
+    5,    // minimum brightness
+    120    // maximum brightness
+  );
+
+  CRGB idleColor = CRGB(brightness, brightness * 0.85, 0);
+
+  fillAllStrips(idleColor);
+
+  FastLED.show();
 }
 
 // ======================================================
@@ -361,13 +393,15 @@ void runSolidIdle() {
 void processBPM(int value) {
 
   runningSum += value;
+
   sampleCount++;
 
   if (millis() - lastPrintTime >= 1000) {
 
     if (sampleCount > 0) {
 
-      float average = (float)runningSum / sampleCount;
+      float average =
+        (float)runningSum / sampleCount;
 
       float bpm = getSkewedBPM(average);
 
@@ -381,6 +415,7 @@ void processBPM(int value) {
       }
 
       Serial.print("Current BPM: ");
+
       Serial.println(bpm);
     }
 
@@ -397,15 +432,29 @@ void processBPM(int value) {
 
 float getSkewedBPM(float avg) {
 
-  float cleanAvg = constrain(avg, 200, 500);
+  float cleanAvg =
+    constrain(avg, 200, 500);
 
   if (cleanAvg <= 350) {
 
-    return map(cleanAvg, 200, 350, 50, 70);
+    return map(
+      cleanAvg,
+      200,
+      350,
+      50,
+      70
+    );
   }
+
   else {
 
-    return map(cleanAvg, 350, 500, 70, 120);
+    return map(
+      cleanAvg,
+      350,
+      500,
+      70,
+      120
+    );
   }
 }
 
@@ -427,9 +476,11 @@ void printSessionSummary() {
 
   sortArray(sortedBPMs, sessionIndex);
 
-  float median = sortedBPMs[sessionIndex / 2];
+  float median =
+    sortedBPMs[sessionIndex / 2];
 
   float filteredSum = 0;
+
   int filteredCount = 0;
 
   for (int i = 0; i < sessionIndex; i++) {
@@ -437,15 +488,18 @@ void printSessionSummary() {
     if (abs(sessionBPMs[i] - median) <= 15.0) {
 
       filteredSum += sessionBPMs[i];
+
       filteredCount++;
     }
   }
 
   if (filteredCount > 0) {
 
-    float averageBPM = filteredSum / filteredCount;
+    float averageBPM =
+      filteredSum / filteredCount;
 
     Serial.print("Average BPM: ");
+
     Serial.println(averageBPM);
   }
 }
@@ -465,6 +519,7 @@ void sortArray(float a[], int size) {
         float temp = a[j];
 
         a[j] = a[j + 1];
+
         a[j + 1] = temp;
       }
     }
