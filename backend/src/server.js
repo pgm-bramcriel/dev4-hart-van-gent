@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 
-const SERIAL_PATH = process.env.SERIAL_PORT || "COM10";
+const SERIAL_PATH = process.env.SERIAL_PORT || "COM3";
 const BAUD = parseInt(process.env.BAUD_RATE || "9600", 10);
 
 const port = new SerialPort({ path: SERIAL_PATH, baudRate: BAUD });
