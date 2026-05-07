@@ -123,8 +123,14 @@ void loop() {
 
   if (isSessionActive) {
 
+    // Stop immediately if touch/pressure is released (session cancelled)
+    if (touchState == LOW) {
+
+      isSessionActive = false;
+      cancelCurrentSession();
+    }
     // Na exact 8 seconden stoppen
-    if (millis() - fillStartTime >= SESSION_DURATION_MS) {
+    else if (millis() - fillStartTime >= SESSION_DURATION_MS) {
 
       isSessionActive = false;
       endCurrentSession();
@@ -277,6 +283,33 @@ void endCurrentSession() {
 
   // Daarna session ended
   Serial.println("--- Session Ended ---");
+}
+
+// ======================================================
+// SESSION CANCEL
+// ======================================================
+
+void cancelCurrentSession() {
+
+  sessionFinishedFlag = false;
+  nextSessionAllowedAtMs = millis() + SESSION_GRACE_PERIOD_MS;
+
+  digitalWrite(MOTOR_PIN_1, LOW);
+  digitalWrite(MOTOR_PIN_2, LOW);
+
+  currentBPM = 0;
+
+  motor1On = false;
+  motor2On = false;
+
+  fillAllStrips(CRGB(255, 220, 0));
+  FastLED.show();
+
+  sessionIndex = 0;
+  runningSum = 0;
+  sampleCount = 0;
+
+  Serial.println("--- Session Cancelled ---");
 }
 
 // ======================================================

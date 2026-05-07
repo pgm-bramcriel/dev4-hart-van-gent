@@ -2,7 +2,8 @@ export type HeartbeatWsMessage =
   | { type: "heartbeat"; value: number }
   | { type: "heartbeat-session-start" }
   | { type: "heartbeat-session-average"; value: number; message: string }
-  | { type: "heartbeat-session-end" };
+  | { type: "heartbeat-session-end" }
+  | { type: "heartbeat-session-cancel" };
 
 type JsonObject = Record<string, unknown>;
 
@@ -72,6 +73,16 @@ export function parseHeartbeatWsMessage(rawData: string): HeartbeatWsMessage | n
     normalizedType === "session-ended"
   ) {
     return { type: "heartbeat-session-end" };
+  }
+
+  if (
+    normalizedType === "heartbeat-session-cancel" ||
+    normalizedType === "heartbeat-session-cancelled" ||
+    normalizedType === "session-cancel" ||
+    normalizedType === "session-cancelled" ||
+    normalizedType === "session cancelled"
+  ) {
+    return { type: "heartbeat-session-cancel" };
   }
 
   return null;

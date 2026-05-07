@@ -34,6 +34,7 @@ const BPM_LINE_REGEX = /^Current BPM:\s*([0-9]+(?:\.[0-9]+)?)$/i;
 const AVERAGE_BPM_LINE_REGEX = /^Average BPM:\s*([0-9]+(?:\.[0-9]+)?)$/i;
 const SESSION_START_REGEX = /^---\s*(?:new\s+)?session\s+started\s*---$/i;
 const SESSION_END_REGEX = /^---\s*session\s+ended\s*---$/i;
+const SESSION_CANCEL_REGEX = /^---\s*session\s+cancel(?:led)?\s*---$/i;
 
 parser.on("data", (line) => {
   handleIncomingPulseLine(line);
@@ -63,6 +64,11 @@ function handleIncomingPulseLine(line) {
 
   if (SESSION_END_REGEX.test(msg)) {
     endSession();
+    return;
+  }
+
+  if (SESSION_CANCEL_REGEX.test(msg)) {
+    cancelSession();
     return;
   }
 
@@ -108,6 +114,13 @@ function endSession() {
   sessionActive = false;
   currentSessionBpmValues = [];
   sendWsMessage({ type: "heartbeat-session-end", ts: Date.now() });
+}
+
+function cancelSession() {
+  sessionActive = false;
+  currentSessionBpmValues = [];
+  sendWsMessage({ type: "heartbeat-session-cancel", ts: Date.now() });
+  sendWsMessage({ type: "heartbeat", value: 0, ts: Date.now() });
 }
 
 function sendSessionAverage(averageBpm) {

@@ -428,6 +428,18 @@ function Home() {
         return;
       }
 
+      if (message.type === "heartbeat-session-cancel") {
+        stopRunningAnimations();
+        stopSessionRustleRamp();
+        stopRustleCooldown();
+        stopRootsFillAnimation(true);
+        stopSessionScreenFx(false);
+        setLeafRustleIntensity(0);
+        setHeartValueLive(0);
+        pendingSessionAverageRef.current = null;
+        return;
+      }
+
       if (message.type === "heartbeat-session-end") {
         stopSessionRustleRamp();
         stopRustleCooldown();
