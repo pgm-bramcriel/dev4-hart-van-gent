@@ -27,17 +27,32 @@ export function parseHeartbeatWsMessage(rawData: string): HeartbeatWsMessage | n
     return null;
   }
 
-  if (parsed.type === "heartbeat") {
+  // Be liberal in what we accept: older/newer backend versions may emit
+  // slightly different event names for session state changes.
+  const normalizedType = parsed.type.trim().toLowerCase();
+
+  if (normalizedType === "heartbeat") {
     const value = readNumber(parsed.value);
     if (value === null) return null;
     return { type: "heartbeat", value };
   }
 
-  if (parsed.type === "heartbeat-session-start") {
+  if (
+    normalizedType === "heartbeat-session-start" ||
+    normalizedType === "session-start" ||
+    normalizedType === "session started" ||
+    normalizedType === "session-started"
+  ) {
     return { type: "heartbeat-session-start" };
   }
 
-  if (parsed.type === "heartbeat-session-average") {
+  if (
+    normalizedType === "heartbeat-session-average" ||
+    normalizedType === "session-average" ||
+    normalizedType === "session average" ||
+    normalizedType === "session-avg" ||
+    normalizedType === "session avg"
+  ) {
     const value = readNumber(parsed.value);
     if (value === null) return null;
     return {
@@ -50,7 +65,12 @@ export function parseHeartbeatWsMessage(rawData: string): HeartbeatWsMessage | n
     };
   }
 
-  if (parsed.type === "heartbeat-session-end") {
+  if (
+    normalizedType === "heartbeat-session-end" ||
+    normalizedType === "session-end" ||
+    normalizedType === "session ended" ||
+    normalizedType === "session-ended"
+  ) {
     return { type: "heartbeat-session-end" };
   }
 

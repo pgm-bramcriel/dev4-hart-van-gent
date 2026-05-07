@@ -38,6 +38,10 @@ bool sessionFinishedFlag = false;
 long runningSum = 0;
 int sampleCount = 0;
 
+// --- Session Grace Period ---
+const unsigned long SESSION_GRACE_PERIOD_MS = 3000;
+unsigned long nextSessionAllowedAtMs = 0;
+
 // --- Trilmotor variabelen ---
 float currentBPM = 0;
 unsigned long lastBeatTime1 = 0;
@@ -68,9 +72,11 @@ void setup() {
 void loop() {
   int pulseValue    = analogRead(pulsePin);
   int pressureValue = analogRead(pressurePin);
+  const unsigned long nowMs = millis();
 
   // 1. SENSOR LOGIC MET HYSTERESIS
-  if (!isSessionActive && pressureValue > THRESHOLD_HIGH) {
+  const bool gracePeriodOver = (long)(nowMs - nextSessionAllowedAtMs) >= 0;
+  if (!isSessionActive && gracePeriodOver && pressureValue > THRESHOLD_HIGH) {
     isSessionActive = true;
     startNewSession();
   } else if (isSessionActive && pressureValue < THRESHOLD_LOW) {
@@ -161,6 +167,7 @@ void startNewSession() {
 
 void endCurrentSession() {
   sessionFinishedFlag = true;
+  nextSessionAllowedAtMs = millis() + SESSION_GRACE_PERIOD_MS;
   digitalWrite(MOTOR_PIN_1, LOW);
   digitalWrite(MOTOR_PIN_2, LOW);
   currentBPM = 0;

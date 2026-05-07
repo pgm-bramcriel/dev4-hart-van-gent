@@ -52,6 +52,13 @@ long runningSum = 0;
 int  sampleCount = 0;
 
 // ======================================================
+// SESSION GRACE PERIOD
+// ======================================================
+
+const unsigned long SESSION_GRACE_PERIOD_MS = 3000;
+unsigned long nextSessionAllowedAtMs = 0;
+
+// ======================================================
 // BPM / MOTORS
 // ======================================================
 
@@ -98,12 +105,14 @@ void loop() {
 
   int pulseValue = analogRead(pulsePin);
   int touchState = digitalRead(TOUCH_PIN);
+  const unsigned long nowMs = millis();
 
   // ====================================================
   // START SESSION
   // ====================================================
 
-  if (!isSessionActive && touchState == HIGH) {
+  const bool gracePeriodOver = (long)(nowMs - nextSessionAllowedAtMs) >= 0;
+  if (!isSessionActive && gracePeriodOver && touchState == HIGH) {
     isSessionActive = true;
     startNewSession();
   }
@@ -248,6 +257,7 @@ void startNewSession() {
 void endCurrentSession() {
 
   sessionFinishedFlag = true;
+  nextSessionAllowedAtMs = millis() + SESSION_GRACE_PERIOD_MS;
 
   digitalWrite(MOTOR_PIN_1, LOW);
   digitalWrite(MOTOR_PIN_2, LOW);
