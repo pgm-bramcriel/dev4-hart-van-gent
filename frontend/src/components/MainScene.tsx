@@ -25,7 +25,7 @@ type MainSceneProps = {
 
 const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 const MAIN_TREE_BASE_POSITION: [number, number, number] = [34.634, 0, -162.088];
-const MAIN_TREE_SCALE = 0.9;
+const MAIN_TREE_SCALE = 1;
 const SECONDARY_TREE_POSITION: [number, number, number] = [37, 1.7, -13];
 const SECONDARY_TREE_SCALE = 0.4;
 const SCENE_FOG_COLOR = "#88e1eb";
