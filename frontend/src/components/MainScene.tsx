@@ -25,10 +25,15 @@ type MainSceneProps = {
 
 const TREE_SCENE_POSITION: [number, number, number] = [34.834, 0, -162.088];
 const MAIN_TREE_BASE_POSITION: [number, number, number] = [34.634, 0, -162.088];
-const MAIN_TREE_SCALE = 1;
 const SECONDARY_TREE_POSITION: [number, number, number] = [37, 1.7, -13];
 const SECONDARY_TREE_SCALE = 0.4;
 const SCENE_FOG_COLOR = "#88e1eb";
+
+const MAIN_TREE_SCALE: Record<TreeVariant, number> = {
+  small: 1,
+  medium: 1.12,
+  large: 1,
+};
 
 const MAIN_TREE_VARIANT_OFFSETS: Record<TreeVariant, [number, number, number]> =
   {
@@ -146,9 +151,10 @@ const MainScene = ({
     "secondary",
     secondaryTreeVariant,
   );
+  const mainTreeScale = MAIN_TREE_SCALE[mainTreeVariant];
   const labelPosition: [number, number, number] = [
     0,
-    MAIN_TREE_LABEL_HEIGHT[mainTreeVariant] * treeGrowthScale * MAIN_TREE_SCALE,
+    MAIN_TREE_LABEL_HEIGHT[mainTreeVariant] * treeGrowthScale * mainTreeScale,
     0,
   ];
   const secondaryLabelPosition: [number, number, number] = [
@@ -159,7 +165,7 @@ const MainScene = ({
   const mainTreePosition = getAnchoredTreePosition(
     [0, 0, 0],
     mainTreeVariant,
-    MAIN_TREE_SCALE,
+    mainTreeScale,
   );
   const secondaryTreePosition = getAnchoredTreePosition(
     SECONDARY_TREE_POSITION,
@@ -180,7 +186,7 @@ const MainScene = ({
       <ParkScene position={TREE_SCENE_POSITION} />
       <MainTreeModel
         position={mainTreePosition}
-        scale={MAIN_TREE_SCALE}
+        scale={mainTreeScale}
         variant={mainTreeVariant}
         treeStage={mainTreeStage}
         growthScale={treeGrowthScale}
