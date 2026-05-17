@@ -123,6 +123,22 @@ function MainTreeModel({
   return <TreeLarge {...treeProps} />;
 }
 
+function HeightLabel({
+  className,
+  heightLabel,
+}: {
+  className: string;
+  heightLabel: string;
+}) {
+  return (
+    <p className={className}>
+      <span className="font-normal">HEIGHT</span>
+      <span className="mx-1.5 font-medium">•</span>
+      <span className="font-medium">{heightLabel}</span>
+    </p>
+  );
+}
+
 const MainScene = ({
   mainLocationName,
   mainLocationHeightLabel,
@@ -214,9 +230,10 @@ const MainScene = ({
           <p className="text-2xl font-bold leading-tight">
             {secondaryLocationName}
           </p>
-          <p className="text-base font-regular leading-tight">
-            {secondaryLocationHeightLabel}
-          </p>
+          <HeightLabel
+            className="mt-1 text-sm leading-tight"
+            heightLabel={secondaryLocationHeightLabel}
+          />
         </div>
       </Html>
       <Html
@@ -228,9 +245,10 @@ const MainScene = ({
       >
         <div className="pointer-events-none text-center text-black">
           <p className="text-3xl font-bold leading-tight">{mainLocationName}</p>
-          <p className="text-lg font-regular leading-tight">
-            {mainLocationHeightLabel}
-          </p>
+          <HeightLabel
+            className="mt-1 text-base leading-tight"
+            heightLabel={mainLocationHeightLabel}
+          />
         </div>
       </Html>
     </>

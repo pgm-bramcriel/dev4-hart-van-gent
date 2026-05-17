@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import MainScene from "@/components/MainScene";
 import heartIcon from "@/assets/heart_icon.svg";
+import lowPolySign from "@/assets/low_poly_sign.png";
 import {
   SessionScreenFxOverlay,
   SessionScreenFxPostprocess,
@@ -18,7 +19,11 @@ import {
 const cameraSettings = {
   fov: 45,
   far: 400,
-  position: [-39.67678544096871, 7.213376399169939, -0.002985271666468517],
+  position: [
+    -39.67678544096871,
+    7.213376399169939,
+    -0.002985271666468517,
+  ] as [number, number, number],
 };
 
 const HEART_COUNTDOWN_INTERVAL_MS = 30;
@@ -100,7 +105,7 @@ function formatHeightInMeters(heightInCm: number | null) {
 
   const meters = heightInCm / 100;
   const compactValue = Number(meters.toFixed(2)).toString();
-  return `${compactValue} meters`;
+  return `${compactValue} m`;
 }
 
 function Home() {
@@ -502,13 +507,27 @@ function Home() {
         isActive={isSessionScreenFxActive}
         strength={sessionScreenFxStrength}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
-        <div className="flex items-center gap-2 text-black">
-          <img src={heartIcon} alt="Heartbeat icon" className="h-10 w-10" />
-          <span className="text-3xl font-bold leading-none">{heartValue}</span>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center">
+        <div className="relative h-[86px] w-[132px]">
+          <img
+            src={lowPolySign}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-contain"
+          />
+          <div className="relative flex h-full items-center justify-center gap-2 pt-6 text-[#EEEEEE]">
+            <img
+              src={heartIcon}
+              alt="Heartbeat icon"
+              className="h-10 w-10"
+            />
+            <span className="text-3xl font-bold leading-none">
+              {heartValue}
+            </span>
+          </div>
         </div>
       </div>
-      <Canvas camera={cameraSettings as any} shadows>
+      <Canvas camera={cameraSettings} shadows>
         <Suspense fallback={null}>
           <MainScene
             mainLocationName={mainLocation?.name ?? "Main location"}
